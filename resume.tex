@@ -1,0 +1,119 @@
+\documentclass[10pt,letterpaper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[letterpaper,margin=0.6in]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{parskip}
+
+\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=1.2em, topsep=2pt, itemsep=2pt, parsep=0pt, partopsep=0pt}
+\pagestyle{empty}
+
+\newcommand{\nameheader}[1]{%
+  {\LARGE \textbf{#1}}\par
+}
+
+\newcommand{\contactline}[1]{%
+  {\small #1}\par
+}
+
+\newcommand{\sectiontitle}[1]{%
+  \vspace{0.6em}
+  {\large \textbf{#1}}\par
+  \vspace{0.15em}
+  \hrule
+  \vspace{0.35em}
+}
+
+\newcommand{\roleheading}[4]{%
+  \textbf{#1} \hfill #2\\
+  \textit{#3} \hfill \textit{#4}\par
+  \vspace{0.15em}
+}
+
+\begin{document}
+
+\nameheader{Jordan Rule}
+\contactline{Austin, TX \;|\; (512) 800-0971 \;|\; \href{mailto:jordanrule@gmail.com}{jordanrule@gmail.com} \;|\; \href{https://www.linkedin.com/in/jrule/}{linkedin.com/in/jrule}}
+
+\sectiontitle{Summary}
+Staff-level machine learning engineer with 15 years of experience building production AI, optimization, and data systems. Specializes in LLM evaluation, agentic workflows, model serving infrastructure, and the translation of research ideas into reliable software. Known for leading cross-functional teams, formalizing quality criteria, and shipping platforms that improve organizational throughput, safety, and measurable business outcomes.
+
+\sectiontitle{Core Strengths}
+\begin{itemize}
+  \item LLM evaluation frameworks, agent design, retrieval and ranking systems, and safety-oriented validation
+  \item Production ML platforms, feature stores, online inference services, observability, and performance engineering
+  \item Experimental design, A/B testing, canary release strategies, and model quality governance
+  \item Distributed systems, data platform architecture, and cross-functional technical leadership
+\end{itemize}
+
+\sectiontitle{Experience}
+
+\roleheading{Software Engineer (Platform)}{Oct 2023 -- Present}{Waystar}{Austin, TX}
+\begin{itemize}
+  \item Lead development of production ML infrastructure and LLM-enabled healthcare workflows, aligning platform design with reliability, compliance, and evaluation requirements.
+  \item Designed an agentic evidence-retrieval system using LangChain and maximum marginal relevance methods to surface relevant support from clinical documentation for insurance validation.
+  \item Established an evaluation framework for LLM-generated clinical summaries combining automatic metrics, expert review, and safety guardrails, giving teams a principled basis for release decisions.
+  \item Architected a Python, Postgres, and Redis feature platform serving more than 5M daily inference requests while supporting 14+ engineers and data scientists through shared abstractions and stable p99 latency.
+  \item Built the integration layer for incorporating foundation models into existing classification and prediction pipelines, enabling rapid experimentation without disrupting legacy model operations.
+  \item Improved database pooling and cache behavior to deliver a 3x throughput gain, helping the broader team meet enterprise SLA targets.
+  \item Developed a large integration test suite for deployment confidence, regression detection, and higher team velocity across model and platform releases.
+\end{itemize}
+
+\roleheading{Software Engineer (Lead)}{Dec 2022 -- Oct 2023}{DispatchHealth}{Austin, TX}
+\begin{itemize}
+  \item Led optimization and evaluation work for ML-driven provider routing in a healthcare dispatch setting with competing geographic and operational constraints.
+  \item Designed a value-based routing system grounded in operations research concepts, improving service coverage by 15\% through better provider allocation.
+  \item Directed migration of the routing backend from Google Maps to Open Source Routing Machine in Go and Postgres, and built an A/B framework to quantify latency and quality trade-offs before rollout.
+  \item Built Postgres-based analytics infrastructure that allowed product and engineering teams to evaluate feature efficacy and production performance from a common measurement layer.
+  \item Designed a distributed conflict-prevention mechanism to preserve schedule consistency across concurrent operations.
+\end{itemize}
+
+\roleheading{Software Engineer (Machine Learning)}{May 2022 -- Dec 2022}{Wayfair}{Austin, TX}
+\begin{itemize}
+  \item Built deployment and experimentation infrastructure for production ML systems with an emphasis on reproducibility and risk-controlled release.
+  \item Designed a generalized Python canary deployment framework for Kubernetes with automated monitoring and rollback criteria, improving team confidence in model promotion.
+  \item Developed deployment strategies using automated quality gates across Kubernetes and Vertex AI Predict to make experimentation more systematic and less operationally expensive.
+  \item Created reproducible build workflows for Python ML applications spanning development, staging, and production environments.
+\end{itemize}
+
+\roleheading{Software Engineer (Staff)}{Apr 2015 -- May 2022}{The Home Depot}{Austin, TX}
+\begin{itemize}
+  \item Led production deployment of recommendation and pricing models contributing more than \$50M in annual revenue impact.
+  \item Guided a cross-functional team of 6 engineers, 3 data scientists, and 2 DevOps engineers through migration of a recommendation platform from EC2 and Aurora to Kubernetes and BigQuery.
+  \item Formalized model quality benchmarks, performance tests, and operational standards that improved release discipline and made the platform more scalable for downstream teams.
+  \item Brought multiple pricing applications from research to production by identifying bottlenecks, defining evaluation criteria, and designing scalable data and serving infrastructure.
+  \item Developed technical patterns for distributed deployment, online evaluation, A/B testing, and automated quality monitoring across pricing systems.
+  \item Led development of a Kotlin ETL framework for centralized metadata management and temporal data extraction across Athena, BigQuery, Aurora, and Teradata.
+  \item Introduced data quality validation pipelines that improved confidence in training data used by multiple modeling efforts.
+\end{itemize}
+
+\roleheading{Software Engineer}{Oct 2013 -- Nov 2014}{Spiceworks, About.com, Digital Reasoning}{Austin, TX / New York, NY}
+\begin{itemize}
+  \item Built data normalization, analytics, and search systems across advertising, marketing, and text retrieval domains using Python, Postgres, Hive, Pandas, Hadoop, and Elasticsearch.
+  \item Contributed to production pipelines that connected heterogeneous data sources to usable analytical and information-retrieval workflows.
+\end{itemize}
+
+\roleheading{Software Engineer (VP/AVP)}{Aug 2009 -- Apr 2013}{Bank of America, Barclays Capital}{New York, NY}
+\begin{itemize}
+  \item Developed batch processing systems for risk outlier identification and regulatory reporting using Python, Netezza, C\#, and Oracle.
+  \item Coordinated with globally distributed teams to define data quality expectations and implement cleaning processes for downstream reporting and analysis.
+\end{itemize}
+
+\sectiontitle{Education}
+\textbf{University of Chicago} --- Master of Science, Financial Mathematics\\
+\textbf{Rice University} --- Bachelor of Arts, Computer Science\\
+\textbf{Rice University} --- Bachelor of Arts, Managerial Studies
+
+\sectiontitle{Technical Skills}
+\textbf{Languages:} Python, TypeScript, Go, Kotlin, SQL, C\#\\
+\textbf{ML and AI:} LLM agents, evaluation frameworks, feature stores, model deployment, experimentation, canary releases, statistical monitoring\\
+\textbf{Infrastructure:} Kubernetes, AWS, GCP, Docker, Redis, Postgres, Aurora, BigQuery, Vertex AI, SageMaker\\
+\textbf{Methods:} Retrieval and ranking, optimization, observability, distributed systems, data pipelines, quality validation
+
+\end{document}
+
+
