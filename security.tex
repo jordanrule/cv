@@ -1,0 +1,122 @@
+\documentclass[10pt,letterpaper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[letterpaper,margin=0.6in]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{parskip}
+
+\setlength{\parindent}{0pt}
+\pagestyle{empty}
+
+\newenvironment{tightitemize}{%
+  \begin{itemize}
+    \setlength{\itemsep}{2pt}
+    \setlength{\topsep}{2pt}
+    \setlength{\parsep}{0pt}
+    \setlength{\partopsep}{0pt}
+}{%
+  \end{itemize}
+}
+
+\newcommand{\nameheader}[1]{%
+  {\LARGE \textbf{#1}}\par
+}
+
+\newcommand{\contactline}[1]{%
+  {\small #1}\par
+}
+
+\newcommand{\sectiontitle}[1]{%
+  \vspace{0.6em}
+  {\large \textbf{#1}}\par
+  \vspace{0.15em}
+  \hrule
+  \vspace{0.35em}
+}
+
+\newcommand{\roleheading}[4]{%
+  \textbf{#1} \hfill #2\\
+  \textit{#3} \hfill \textit{#4}\par
+  \vspace{0.15em}
+}
+
+\begin{document}
+
+\nameheader{Jordan Rule}
+\contactline{Austin, TX \;|\; (512) 800-0971 \;|\; \href{mailto:jordanrule@gmail.com}{jordanrule@gmail.com} \;|\; \href{https://www.linkedin.com/in/jrule/}{linkedin.com/in/jrule} \;|\; \href{https://github.com/jordanrule}{github.com/jordanrule}}
+
+\sectiontitle{Summary}
+Staff-level software and machine learning engineer with 15 years of experience shipping production systems in regulated and high-scale environments. Security-minded builder focused on secure defaults, practical controls, and developer-friendly workflows across AI products, cloud infrastructure, and data platforms. Known for leading cross-functional teams to deliver measurable outcomes in reliability, compliance, latency, and release confidence.
+
+\sectiontitle{Security and Engineering Strengths}
+\begin{tightitemize}
+  \item Secure AI product delivery: LLM evaluation frameworks, safety guardrails, release criteria, and regression detection
+  \item Cloud and platform hardening: production services on Kubernetes with canary rollouts, quality gates, rollback controls, and observability
+  \item Builder-plus-attacker mindset: failure-mode analysis, risk tradeoff decisions, and layered controls that reduce blast radius
+  \item Developer experience: paved-road tooling, shared abstractions, and automation that improve velocity without weakening safeguards
+  \item Team leadership: alignment across engineering, data science, and operations to ship resilient systems end-to-end
+\end{tightitemize}
+
+\sectiontitle{Experience}
+
+\roleheading{Software Engineer (Platform)}{Oct 2023 -- Present}{Waystar}{Austin, TX}
+\begin{tightitemize}
+  \item Lead development of production ML infrastructure and LLM-enabled healthcare workflows with emphasis on reliability, compliance, and safe rollout.
+  \item Designed an agentic evidence-retrieval system using LangChain and maximum marginal relevance methods to surface support from clinical documentation for insurance validation.
+  \item Established an evaluation framework for LLM-generated clinical summaries combining automatic metrics, expert review, and safety guardrails, creating clear go/no-go criteria for releases.
+  \item Architected a Python, Postgres, and Redis feature platform serving 5M+ daily inference requests with stable p99 latency for 14+ engineers and data scientists.
+  \item Improved database pooling and cache behavior for a 3x throughput gain and stronger SLA performance under enterprise load.
+  \item Developed an integration test suite that increased deployment confidence and caught regressions before production impact.
+\end{tightitemize}
+
+\roleheading{Software Engineer (Lead)}{Dec 2022 -- Oct 2023}{DispatchHealth}{Austin, TX}
+\begin{tightitemize}
+  \item Led optimization and evaluation work for ML-driven provider routing in a high-consequence healthcare dispatch environment.
+  \item Designed a value-based routing system grounded in operations research, improving service coverage by 15\% through better provider allocation.
+  \item Directed migration of routing backend from Google Maps to Open Source Routing Machine (Go/Postgres), and built an A/B framework to measure latency and quality risk before rollout.
+  \item Built a shared analytics layer and distributed conflict-prevention mechanism to improve production decision quality and scheduling consistency.
+\end{tightitemize}
+
+\roleheading{Software Engineer (Machine Learning)}{May 2022 -- Dec 2022}{Wayfair}{Austin, TX}
+\begin{tightitemize}
+  \item Built deployment and experimentation infrastructure for production ML systems with reproducibility and controlled release as first principles.
+  \item Designed a generalized Python canary deployment framework for Kubernetes with automated monitoring and rollback criteria.
+  \item Developed deployment strategies with automated quality gates across Kubernetes and Vertex AI Predict, plus reproducible build workflows for promotion across environments.
+\end{tightitemize}
+
+\roleheading{Software Engineer (Staff)}{Apr 2015 -- May 2022}{The Home Depot}{Austin, TX}
+\begin{tightitemize}
+  \item Led production deployment of recommendation and pricing models contributing more than \$50M in annual revenue impact.
+  \item Guided a cross-functional team of 6 engineers, 3 data scientists, and 2 DevOps engineers through migration of a recommendation platform from EC2/Aurora to Kubernetes/BigQuery.
+  \item Formalized model quality benchmarks, performance tests, and operational standards that improved release discipline and reduced production risk.
+  \item Brought multiple pricing applications from research to production by defining evaluation criteria and building scalable serving and data infrastructure.
+  \item Developed technical patterns for distributed deployment, online evaluation, A/B testing, and automated quality monitoring.
+  \item Led Kotlin ETL and data quality validation initiatives that improved trust in training data across modeling efforts.
+\end{tightitemize}
+
+\roleheading{Software Engineer}{Oct 2013 -- Nov 2014}{Spiceworks, About.com, Digital Reasoning}{Austin, TX / New York, NY}
+\begin{tightitemize}
+  \item Built data normalization, analytics, and search systems across advertising, marketing, and text retrieval with Python-centric data tooling.
+\end{tightitemize}
+
+\roleheading{Software Engineer (VP/AVP)}{Aug 2009 -- Apr 2013}{Bank of America, Barclays Capital}{New York, NY}
+\begin{tightitemize}
+  \item Developed batch systems for risk outlier identification and regulatory reporting, and coordinated globally distributed teams on data quality standards.
+\end{tightitemize}
+
+\sectiontitle{Education}
+\textbf{University of Chicago} --- Master of Science, Financial Mathematics\\
+\textbf{Rice University} --- Bachelor of Arts, Computer Science\\
+\textbf{Rice University} --- Bachelor of Arts, Managerial Studies
+
+\sectiontitle{Technical Skills}
+\textbf{Languages:} Python, TypeScript, Go, Kotlin, SQL, C\#\\
+\textbf{Security and Platform:} Secure-by-default service design, deployment guardrails, canary release controls, observability, quality validation, incident risk reduction\\
+\textbf{ML and AI:} LLM agents, evaluation frameworks, feature stores, model deployment, experimentation, statistical monitoring\\
+\textbf{Infrastructure:} Kubernetes, AWS, GCP, Docker, Redis, Postgres, Aurora, BigQuery, Vertex AI, SageMaker\\
+\textbf{Independent Work:} Security-focused analysis of the LLVM open source compiler supply chain using lambda-calculus-based reasoning
+
+\end{document}
+
