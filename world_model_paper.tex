@@ -1,0 +1,670 @@
+%% world_model_paper.tex
+%% Dependently Typed World Models: Toward Proof-Carrying Learned Simulators
+%% Draft — August 2026
+
+\documentclass[12pt, a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1.25in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage[hidelinks]{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{natbib}
+\usepackage{abstract}
+\usepackage{titlesec}
+
+% ---- typography ----
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{0.5em}{}
+\setlength{\parindent}{1.4em}
+\setlength{\parskip}{0pt}
+
+% ---- listings style for Rocq / Coq ----
+\definecolor{rocqblue}{RGB}{0,80,160}
+\definecolor{rocqgray}{RGB}{100,100,100}
+\definecolor{rocqgreen}{RGB}{0,120,60}
+\definecolor{panelbg}{RGB}{236,244,234}
+
+\lstdefinelanguage{Rocq}{
+  keywords={From,Require,Import,Section,Context,Record,Definition,Lemma,Proof,
+            Qed,End,forall,exists,fun,match,with,let,in,if,then,else,
+            Inductive,Fixpoint,Variable,Hypothesis,Axiom,Notation,
+            move,rewrite,case,apply,exact,intro,intros,simpl,auto,by},
+  keywordstyle=\color{rocqblue}\bfseries,
+  comment=[l]{(*},
+  commentstyle=\color{rocqgray}\itshape,
+  stringstyle=\color{rocqgreen},
+  morestring=[b]",
+  sensitive=true,
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{panelbg},
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{rocqgray!60},
+  breaklines=true,
+  captionpos=b,
+  xleftmargin=1.2em,
+  xrightmargin=0.6em,
+  aboveskip=0.8em,
+  belowskip=0.6em
+}
+
+\lstset{language=Rocq}
+
+% ---- theorem environments ----
+\newtheorem{definition}{Definition}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{remark}{Remark}[section]
+
+% ---- metadata ----
+\title{\textbf{Dependently Typed World Models}\\[0.4em]
+  \large Toward Proof-Carrying Learned Simulators}
+\author{Anonymous\\[0.2em]
+  \small Submitted for review}
+\date{August 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+% ---- abstract ----
+\begin{abstract}
+\noindent
+World models—learned simulators of environment dynamics used in model-based
+reinforcement learning—have demonstrated strong empirical performance yet
+remain difficult to endow with machine-checked invariants. We argue that
+dependent type theory, and in particular the algebraic structures made
+tractable in the Rocq proof assistant, provides a natural semantic framework
+for strengthening world models with verifiable guarantees. We introduce the
+notion of a \emph{proof-carrying world model}: a learned simulator whose
+latent states, observation operators, and planning procedures are annotated
+with machine-checked witnesses of admissibility. We show how partial
+commutative monoids (PCMs) over finitely keyed maps—already developed for
+separation-logic reasoning about heap-like resources—can be reinterpreted as
+a compositional semantics for heterogeneous agent histories, cached beliefs,
+and capability scopes. We develop small illustrative Rocq formalizations of
+these ideas and sketch a research agenda toward alignment-aware planning
+under typed resource constraints.
+\end{abstract}
+
+\bigskip
+\noindent\textit{Keywords:} world models, dependent type theory, Rocq, partial
+commutative monoids, model-based reinforcement learning, proof-carrying
+programs, alignment.
+
+\newpage
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Introduction}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+The success of model-based reinforcement learning (MBRL) over the past decade
+rests on a single insight: an agent that can simulate its environment can plan
+efficiently without exhausting the real environment in trial
+\citep{sutton1990dyna, ha2018world, hafner2019dream, schrittwieser2020mastering}.
+The learned simulator—often called a \emph{world model}—compresses sensory
+history into a compact latent state, predicts the consequences of candidate
+actions, and thereby enables forward search at a fraction of the sample cost
+required by purely reactive approaches
+\citep{hafner2023mastering, ye2021efficientzero}.
+
+Despite this empirical progress, world models share a structural limitation
+with most learned systems: their internal representations carry no
+machine-verifiable account of what they are permitted to represent or
+what invariants they are committed to preserving. Admissibility conditions,
+scope constraints, and capability limits are expressed, when they are expressed
+at all, in natural language documentation, external monitors, or post-hoc
+audits. They are, in the language of software engineering, \emph{extrinsic} to
+the model rather than \emph{intrinsic} to it.
+
+This paper argues that dependent type theory provides the missing vocabulary.
+In a dependently typed setting, an object may carry, as part of its very type,
+a machine-checked proof that it satisfies the conditions required for its use.
+Proof need not arrive as a chaperone after the fact; it can accompany the value
+from the moment of construction. We draw in particular on the Rocq proof
+assistant \citep{coq2024} and on the FCSL-PCM library \citep{nanevski2019fcsl},
+which develops partial commutative monoids (PCMs) as a clean algebraic model
+of separable, composable resources.
+
+Our contributions are:
+\begin{enumerate}
+  \item A conceptual framework—the \emph{proof-carrying world model}—that
+    articulates how dependent types can annotate the operational interfaces of
+    a learned simulator (\S\ref{sec:framework}).
+  \item An account of how PCMs, originally developed for separation-logic
+    reasoning over heap memory, can be reinterpreted as a compositional
+    semantics for agent observation histories and capability scopes
+    (\S\ref{sec:pcm}).
+  \item Small Rocq formalizations illustrating these ideas, from basic
+    proof-carrying state through typed rollout traces to heap-style ownership
+    of sensor boundaries (\S\ref{sec:rocq}).
+  \item A discussion of research directions, including connections to
+    alignment-aware planning and multi-agent trust (\S\ref{sec:discussion}).
+\end{enumerate}
+
+We do not claim a complete implementation. We offer a research direction and
+a working vocabulary for future development.
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Background}
+\label{sec:background}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{World Models in Reinforcement Learning}
+
+A world model, in the MBRL sense, is a parametric function
+$f_\theta : \mathcal{Z} \times \mathcal{A} \to \mathcal{Z} \times \mathcal{R}$
+mapping a latent state $z \in \mathcal{Z}$ and action $a \in \mathcal{A}$ to a
+predicted successor state and reward signal. Practical systems augment this
+with encoder and decoder networks that map between observation space and latent
+space, and with planning modules—cross-entropy method \citep{botev2013cem},
+Monte Carlo Tree Search \citep{coulom2006mcts}, or learned value functions
+\citep{hafner2023mastering}—that search over imagined trajectories.
+
+Key empirical milestones include Dyna \citep{sutton1990dyna}, which first
+demonstrated the efficiency of planning inside a learned model; World Models
+\citep{ha2018world}, which popularized recurrent variational world models for
+visual tasks; DreamerV1–V3 \citep{hafner2019dream, hafner2021mastering,
+hafner2023mastering}, which showed that long-horizon imagination can match or
+exceed model-free baselines; and MuZero \citep{schrittwieser2020mastering},
+which learned a model sufficient for planning without requiring faithful
+reconstruction of observations.
+
+A recurring theme is the tension between \emph{predictive accuracy} and
+\emph{structural fidelity}. Predictively accurate models may still fail to
+capture the constraints—resource limits, scope boundaries, capability
+revocations—that govern what a system is permitted to do, as distinct from
+what it expects to happen. This gap is the starting point for our proposal.
+
+\subsection{Dependent Type Theory and the Rocq Proof Assistant}
+
+Dependent type theory \citep{martin-lof1984, coquand1988calculus} extends the
+Curry–Howard correspondence \citep{howard1980, wadler2015propositions} so that
+types may contain, and depend upon, ordinary program values. A type such as
+$\mathsf{Vec}(n)$—a vector of exactly $n$ elements—encodes a length invariant
+that the type-checker enforces at compile time, without separate runtime
+assertion. More generally, a value of type $\{x : A \mid P(x)\}$ is both a
+value in $A$ and a proof of $P(x)$, inseparably.
+
+Rocq (formerly Coq) \citep{coq2024} implements the Calculus of Inductive
+Constructions \citep{coquand1988calculus, paulin-mohring2015}, a rich
+dependent type theory supporting:
+\begin{itemize}
+  \item \emph{Inductive types} and pattern matching;
+  \item \emph{Dependent records} (\texttt{Record}) that bundle values with
+    their correctness conditions;
+  \item \emph{Proof terms} as first-class citizens of the same language as
+    programs;
+  \item \emph{Extraction} to OCaml or Haskell, enabling certified programs to
+    run outside the proof environment.
+\end{itemize}
+
+The MathComp library \citep{gonthier2013odd} and the FCSL-PCM library
+\citep{nanevski2019fcsl} provide mature algebraic foundations—including Boolean
+reflection, finite maps, and partial commutative monoids—on which we build.
+
+\subsection{Partial Commutative Monoids}
+
+\begin{definition}[Partial Commutative Monoid]
+A \emph{partial commutative monoid} (PCM) is a set $U$ equipped with a
+distinguished element $\mathbf{0} \in U$, a \emph{validity} predicate
+$\mathsf{valid} : U \to \mathsf{Prop}$, and a partial binary operation
+$\oplus : U \to U \to U$ satisfying:
+\begin{align*}
+  &\mathsf{commutativity:}    & x \oplus y &= y \oplus x \\
+  &\mathsf{associativity:}    & (x \oplus y) \oplus z &= x \oplus (y \oplus z) \\
+  &\mathsf{unit:}             & x \oplus \mathbf{0} &= x \\
+  &\mathsf{validity\ domain:} & \mathsf{valid}(x \oplus y) &\Rightarrow
+    \mathsf{valid}(x) \wedge \mathsf{valid}(y)
+\end{align*}
+When $\mathsf{valid}(x \oplus y)$ fails, $x \oplus y$ returns a distinguished
+\emph{undefined} element $\mathsf{Undef}$.
+\end{definition}
+
+PCMs arose in the context of separation logic \citep{reynolds2002sl,
+ohearn2019sl} as the canonical semantic domain for \emph{separating
+conjunction}: two resources $x$ and $y$ may be combined if and only if their
+join is valid—that is, they do not overlap or conflict. The FCSL-PCM library
+\citep{nanevski2019fcsl} provides a rich Rocq hierarchy of PCM instances,
+including heap-like finite maps, which we repurpose in \S\ref{sec:pcm}.
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{A Framework for Proof-Carrying World Models}
+\label{sec:framework}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Motivation}
+
+The latent state $z$ of a world model typically has no intrinsic type other
+than ``tensor of floats.'' Its admissibility—whether it encodes a state the
+system is permitted to reason about—is enforced, if at all, by external
+wrappers, evaluation callbacks, or human review. We propose to make
+admissibility \emph{intrinsic}: the type of a latent state should include
+evidence of its own legitimacy.
+
+More concretely, consider a multi-agent planning system in which different
+submodels govern different capability scopes—one model has read access to
+sensor $S_1$, another controls actuator $A_3$. In a conventional architecture,
+scope enforcement is handled by runtime checks, policy tables, or
+application-level guards that sit outside the model itself. A dependently typed
+architecture would express scope as part of the type of the state: the type of
+``state with actuator $A_3$ capability'' literally differs from the type of
+``state without it.'' Scope confusion becomes a type error, detected before
+execution.
+
+\subsection{Proof-Carrying State}
+
+We define a \emph{proof-carrying state} as a dependent record bundling a
+representational value with a machine-checked admissibility witness.
+
+\begin{definition}[Proof-Carrying State]
+Let $S$ be a set of representational states and let
+$\mathsf{Adm} : S \to \mathsf{Prop}$ be an admissibility predicate. A
+\emph{proof-carrying state} is a pair $(s, h)$ where $s \in S$ and $h :
+\mathsf{Adm}(s)$.
+\end{definition}
+
+The key property is that proof-carrying states \emph{cannot be constructed in
+an inadmissible configuration}: construction of the pair requires producing the
+proof $h$ simultaneously with the value $s$. There is no window between
+construction and certification.
+
+\subsection{Proof-Carrying World Model Interface}
+
+A world model operating over proof-carrying states must be designed so that:
+\begin{enumerate}
+  \item \emph{Observation closure}: applying the observation operator to an
+    admissible state produces an admissible state.
+  \item \emph{Imagination validity}: applying the imagination (rollout)
+    operator to an admissible state produces a valid (non-undefined) state.
+\end{enumerate}
+
+These are not runtime checks but proof obligations discharged at definition
+time. A world model that cannot satisfy them is, in a precise sense,
+\emph{ill-typed}—it cannot be instantiated.
+
+The following Rocq sketch captures the interface:
+
+\begin{lstlisting}[caption={Proof-carrying world model interface in Rocq},
+                   label={lst:world-interface}]
+From mathcomp Require Import ssreflect ssrbool ssrnat seq.
+From pcm Require Import pcm.
+
+Section TypedWorld.
+Context {State : pcm}.
+
+Record WorldModel := {
+  observe  : State -> seq nat -> State;
+  imagine  : State -> seq nat -> State;
+  admissible : State -> Prop;
+  observe_ok : forall s frame,
+    admissible s -> admissible (observe s frame);
+  imagine_ok : forall s actions,
+    admissible s -> valid (imagine s actions)
+}.
+
+End TypedWorld.
+\end{lstlisting}
+
+The \texttt{State} is parameterized by an arbitrary PCM, so the framework is
+not committed to any particular representation; heap-like finite maps, trace
+histories, and richer algebraic structures are all valid instantiations.
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{PCMs as Compositional Semantics for Agent Histories}
+\label{sec:pcm}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{From Heap Reasoning to History Composition}
+
+Separation logic was designed to reason locally: a Hoare triple in separation
+logic is valid for a fragment of the heap, and the frame rule extends it to
+arbitrarily larger heaps that the procedure does not touch
+\citep{reynolds2002sl}. The key semantic enabler is that heap composition via
+$\oplus$ is defined only when the constituent fragments are disjoint—capturing
+the intuition that two independent computations cannot silently share state.
+
+We propose an analogous discipline for world model histories. An
+\emph{observation history} is a finite map from timesteps to observation
+records; a \emph{capability scope} is a finite map from capability identifiers
+to authorization witnesses. Two such fragments can be joined if and only if
+their key sets are disjoint—that is, if they record disjoint portions of the
+agent's experience or authority.
+
+\begin{definition}[History PCM]
+Let $\mathcal{T}$ be a countable set of timesteps and $\mathcal{O}$ a set of
+observation records. Define $\mathcal{H} = \mathcal{T} \rightharpoonup
+\mathcal{O}$ (partial functions with finite support). The PCM structure on
+$\mathcal{H}$ is:
+\begin{align*}
+  \mathsf{valid}(h) &\;\triangleq\; h \neq \mathsf{Undef} \\
+  h_1 \oplus h_2 &\;\triangleq\;
+    \begin{cases}
+      h_1 \cup h_2 & \text{if } \mathrm{dom}(h_1) \cap \mathrm{dom}(h_2) = \emptyset \\
+      \mathsf{Undef} & \text{otherwise}
+    \end{cases}
+\end{align*}
+This is exactly the PCM of disjoint-key finite maps, realized in Rocq by
+\texttt{natmap} \citep{nanevski2019fcsl}.
+\end{definition}
+
+Under this reading, combining two histories is only valid if they record
+distinct moments in time. Conflicting entries—two agents writing different
+observations for the same timestep—produce an undefined result, signaling a
+representational conflict that the planner must not silently resolve.
+
+\subsection{Typed Rollout Traces}
+
+A \emph{rollout trace} in our framework is a proof-carrying history: a finite
+map from timesteps to rewards, annotated with a positive-horizon witness. The
+following Rocq definition makes this concrete:
+
+\begin{lstlisting}[caption={Typed rollout trace},
+                   label={lst:rollout}]
+From mathcomp Require Import ssreflect ssrbool ssrnat seq.
+From pcm Require Import pcm natmap.
+
+Record rollout := {
+  trace      : history nat;
+  horizon    : nat;
+  horizon_pos : horizon > 0
+}.
+
+Definition extend_trace (r : rollout) (t reward : nat) :=
+  if t == 0 then None
+  else if valid ((t \-> reward) \+ trace r)
+       then Some {| trace      := (t \-> reward) \+ trace r;
+                    horizon    := horizon r;
+                    horizon_pos := horizon_pos r |}
+       else None.
+\end{lstlisting}
+
+The \texttt{extend\_trace} function is partial: it returns \texttt{None}
+whenever the new timestep is zero (a sentinel for invalid time) or whenever
+the new entry conflicts with an existing entry in the map. This partiality is
+not an error condition to be caught at runtime; it is the honest signature of
+an operation that may legitimately fail to produce a valid result.
+
+\subsection{Capability Scopes as Resource Types}
+
+Beyond observation histories, PCMs provide a natural model for
+\emph{capability scopes}—the set of actions an agent is currently authorized
+to perform. We represent a capability scope as a finite map from capability
+identifiers to authorization tokens (represented, for simplicity, as natural
+numbers). Two scopes may be combined only if they govern disjoint sets of
+capabilities. An agent attempting to act under a capability it does not hold
+faces a type error at the point of action construction, not a runtime
+permission denial.
+
+This design separates two concerns that are often conflated in practice:
+\emph{what an agent expects to happen} (the predictive content of the world
+model) and \emph{what an agent is permitted to cause} (the normative content,
+now encoded in types). Violations of the latter are detected constructively,
+before any real-world action is taken.
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Illustrative Rocq Formalizations}
+\label{sec:rocq}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Proof-Carrying State: A Minimal Example}
+
+Before introducing PCM structure, we illustrate the simplest instance of
+proof-carrying state: a rollout record whose \texttt{horizon} field is
+certified by a length witness.
+
+\begin{lstlisting}[caption={Minimal proof-carrying rollout record},
+                   label={lst:minimal}]
+From Coq Require Import List Arith.
+Import ListNotations.
+
+Record CheckedRollout := {
+  horizon         : nat;
+  actions         : list nat;
+  horizon_matches : length actions = horizon
+}.
+
+Definition single_action (a : nat) : CheckedRollout :=
+  {| horizon         := 1;
+     actions         := [a];
+     horizon_matches := eq_refl |}.
+\end{lstlisting}
+
+The field \texttt{horizon\_matches} is not a runtime assertion but a proof
+term. It is discharged by \texttt{eq\_refl} at the point of construction,
+confirming that the singleton list \texttt{[a]} has length~1. A \texttt{CheckedRollout}
+with mismatched horizon cannot be constructed; the attempt would produce a type
+error.
+
+\subsection{Sensor Ownership via Heap-Style PCMs}
+
+We illustrate resource-typed sensor access using the \texttt{heap} PCM from
+FCSL-PCM. A sensor write is defined to return \texttt{Undef} if the target
+pointer is null, and a lemma certifies that non-null writes preserve validity.
+
+\begin{lstlisting}[caption={Heap-style ownership for sensor boundary},
+                   label={lst:sensor}]
+From mathcomp Require Import ssreflect ssrbool.
+From pcm Require Import heap.
+
+Definition sensor_write (p : ptr) (v : dynamic id) (h : heap) :=
+  if p == null then Undef else upd p v h.
+
+Lemma sensor_write_preserves_nonnull p v h :
+  p != null ->
+  sensor_write p v h != Undef.
+Proof.
+move=> p_nonnull.
+rewrite /sensor_write p_nonnull.
+case: h=> //= fm pf.
+by case: decP=> // /eqP.
+Qed.
+\end{lstlisting}
+
+The lemma \texttt{sensor\_write\_preserves\_nonnull} is a machine-checked
+guarantee. Any system that calls \texttt{sensor\_write} on a non-null pointer
+inherits the proof; any downstream code that requires a valid heap fragment
+can accept the result directly.
+
+\subsection{Composing Agent Histories}
+
+The following sketch demonstrates how two disjoint history fragments may be
+safely combined into a single rollout.
+
+\begin{lstlisting}[caption={Safe composition of disjoint observation fragments},
+                   label={lst:compose}]
+From mathcomp Require Import ssreflect ssrbool ssrnat.
+From pcm Require Import pcm natmap.
+
+(* Two disjoint observation fragments *)
+Definition obs1 : history nat := 1 \-> 42.
+Definition obs2 : history nat := 2 \-> 17.
+
+(* Their join is valid because key sets are disjoint *)
+Lemma obs_join_valid : valid (obs1 \+ obs2).
+Proof. by rewrite /obs1 /obs2; compute. Qed.
+
+(* An attempt to join conflicting entries produces Undef *)
+Definition obs1' : history nat := 1 \-> 99.
+
+Lemma obs_conflict_invalid : ~~ valid (obs1 \+ obs1').
+Proof. by rewrite /obs1 /obs1'; compute. Qed.
+\end{lstlisting}
+
+These two lemmas capture the core safety property: valid composition is not
+assumed or checked at runtime; it is established once, by proof, and then
+inherited by any code that depends on the composed history.
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Discussion and Research Directions}
+\label{sec:discussion}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Alignment-Aware Planning}
+
+The alignment problem for learned agents \citep{russell2019human,
+gabriel2020alignment} is, in part, a problem of specification: how does an
+agent know that the actions it is considering are within the scope of what it
+is supposed to do? Current approaches rely heavily on reward shaping, RLHF
+\citep{christiano2017rlhf, bai2022training}, and constitutional constraints
+\citep{bai2022constitutional}, all of which are intrinsically extrinsic—they
+surround the model with evaluative signals rather than embedding constraints
+within its representational structure.
+
+A proof-carrying world model offers a complementary approach. By requiring
+that high-stakes action types carry typed witnesses of their preconditions, the
+planning procedure is structurally prevented from producing plans that would
+violate stated constraints—not because a guard intercepts the output, but
+because the output type cannot be constructed without the required evidence. The
+difference is analogous to the difference between a runtime bounds check and a
+statically verified array access: the latter eliminates a class of error by
+construction, before execution begins.
+
+We envision a planning module whose action type is parameterized by a
+capability scope $\kappa$: an action of type $\mathsf{Action}(\kappa)$ may
+only exercise the capabilities enumerated in $\kappa$. The planner's type
+signature then enforces that it cannot produce an action requiring capability
+$c$ unless $c \in \kappa$. Scope escalation becomes a type error.
+
+\subsection{Multi-Agent Trust and Fragment Provenance}
+
+In multi-agent settings, observations arrive from diverse sources with varying
+degrees of trust. A dependently typed world model can represent this by
+annotating observation histories with \emph{provenance types}: a history of
+type $\mathsf{Hist}(\tau)$ was collected under trust level $\tau$, and the
+type system can enforce that a planner operating under trust level $\tau'$
+may only act on histories whose provenance satisfies $\tau' \preceq \tau$ for
+some trust ordering $\preceq$.
+
+The PCM structure ensures that joining histories of incompatible provenance
+produces an \texttt{Undef} result rather than a silently untrusted composite.
+This makes cross-provenance contamination detectable at the type level—a
+property that has practical significance wherever agents interact with
+adversarially constructed inputs or aggregated data of heterogeneous origin.
+
+\subsection{Connections to Verified Machine Learning}
+
+Our proposal is broadly consistent with a growing literature on
+\emph{verified machine learning} \citep{seshia2018formal, katz2019marabou,
+liu2021algorithms} and \emph{certified programs}
+\citep{leroy2009compcert, klein2009sel4}. These works pursue machine-checked
+correctness for specific properties—robustness bounds, absence of undefined
+behavior—but typically treat the neural component as a black box to be
+analyzed from the outside. Our contribution is to argue that the
+\emph{interface} of a world model—its observation operators, imagination
+rollouts, and planning predicates—can itself be given a dependently typed
+specification that interoperates naturally with proof-assistant toolchains.
+
+This is complementary to, rather than in competition with, techniques for
+verifying the \emph{internals} of neural networks. A world model whose
+interface carries machine-checked guarantees can be composed with a certifying
+planner even if the neural weights themselves remain opaque. The typed
+interface becomes the contract between the learned and the verified parts of
+the system.
+
+\subsection{Toward a Full Formal Development}
+
+The formalizations in \S\ref{sec:rocq} are illustrative sketches, not a
+complete verified system. A full development would require:
+\begin{enumerate}
+  \item A Rocq formalization of the world model interface parameterized by an
+    arbitrary PCM, with proofs of the stated closure properties.
+  \item A typed rollout algebra: a Rocq structure capturing the sequential
+    composition of proof-carrying transitions under horizon constraints.
+  \item A formalization of capability scopes as PCMs over finite maps of
+    authorization tokens, with lifting lemmas connecting scope composition to
+    the planning type.
+  \item An extraction pipeline enabling certified planning code to run inside
+    a standard MBRL training loop.
+\end{enumerate}
+
+We leave this development as future work, noting that each component has
+precedent: the FCSL-PCM library provides the algebraic foundations; verified
+functional programs with extraction are routine in Rocq; and typed planning
+interfaces have been explored in the context of verified task planners
+\citep{blanchette2011nitpick}.
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Related Work}
+\label{sec:related}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+\paragraph{World models.}
+Ha and Schmidhuber's World Models \citep{ha2018world} established the
+``dream-then-act'' paradigm for visual planning. The DreamerV1--V3 series
+\citep{hafner2019dream, hafner2021mastering, hafner2023mastering} demonstrated
+that continuous control and Atari tasks can be mastered through pure
+imagination. MuZero \citep{schrittwieser2020mastering} showed that a latent
+model without ground-truth reconstruction suffices for search-based planning.
+EfficientZero \citep{ye2021efficientzero} extended this to extreme sample
+efficiency. None of these architectures address typed invariants on the model
+interface.
+
+\paragraph{Formal methods and learning.}
+Seshia et al.\ \citep{seshia2018formal} survey formal specification and
+verification techniques applicable to learning-enabled systems, emphasizing
+runtime monitors and assume-guarantee contracts. Neural network verification
+\citep{katz2019marabou, liu2021algorithms} focuses on robustness of fixed
+networks. CompCert \citep{leroy2009compcert} and seL4 \citep{klein2009sel4}
+demonstrate that large software systems can be given machine-checked
+correctness proofs; our work proposes that learned interfaces can participate
+in such developments.
+
+\paragraph{Separation logic and resources.}
+Reynolds \citep{reynolds2002sl} introduced separation logic; O'Hearn
+\citep{ohearn2019sl} surveys two decades of development. Nanevski et al.\
+\citep{nanevski2019fcsl} develop FCSL as a Hoare-logic framework for
+concurrent separation reasoning, with a mature Rocq library. We repurpose this
+infrastructure for compositional history reasoning.
+
+\paragraph{Alignment and specification.}
+Russell \citep{russell2019human} frames alignment as a problem of
+misspecified objectives. Christiano et al.\ \citep{christiano2017rlhf} and
+Bai et al.\ \citep{bai2022training, bai2022constitutional} address alignment
+through human feedback and constitutional constraints. Gabriel
+\citep{gabriel2020alignment} provides a conceptual taxonomy. Our proposal is
+orthogonal: rather than specifying objectives more accurately, we propose to
+specify the operational interface of the model more precisely.
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusion}
+\label{sec:conclusion}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+We have argued that the latent states, observation operators, and planning
+procedures of learned world models are appropriate targets for dependent type
+annotation, and that partial commutative monoids provide a natural algebraic
+language for the compositional reasoning this requires. The resulting notion
+of a \emph{proof-carrying world model} shifts certain safety and scope
+guarantees from runtime monitors and external policy tables to the type
+structure of the model itself—making violations detectable before execution
+rather than after.
+
+The proposal is not a complete solution to the deep challenges of learned-agent
+reliability. A world model whose interface is well-typed may still learn an
+inaccurate model of environment dynamics; proof-carrying state does not
+substitute for empirical validity. What it does is ensure that the commitments
+the system makes about scope, provenance, and composition are expressed in a
+form that can be checked mechanically, composed reliably, and depended upon by
+downstream verified components.
+
+In that modest but precise sense, dependent type theory offers machine
+learning something it has rarely been asked to accept: not a new performance
+benchmark, but an obligation to say clearly what it knows—and to carry the
+proof.
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\bibliographystyle{plainnat}
+\bibliography{world_model_paper}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+\end{document}
+
