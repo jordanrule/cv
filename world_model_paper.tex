@@ -78,21 +78,26 @@
 % ---- abstract ----
 \begin{abstract}
 \noindent
-World models—learned simulators of environment dynamics used in model-based
-reinforcement learning—have demonstrated strong empirical performance yet
-remain difficult to endow with machine-checked invariants. We argue that
-dependent type theory, and in particular the algebraic structures made
-tractable in the Rocq proof assistant, provides a natural semantic framework
-for strengthening world models with verifiable guarantees. We introduce the
-notion of a \emph{proof-carrying world model}: a learned simulator whose
-latent states, observation operators, and planning procedures are annotated
-with machine-checked witnesses of admissibility. We show how partial
-commutative monoids (PCMs) over finitely keyed maps—already developed for
-separation-logic reasoning about heap-like resources—can be reinterpreted as
-a compositional semantics for heterogeneous agent histories, cached beliefs,
-and capability scopes. We develop small illustrative Rocq formalizations of
-these ideas and sketch a research agenda toward alignment-aware planning
-under typed resource constraints.
+World models are the internal working pictures through which many modern
+learning systems rehearse possible futures. They compress experience, imagine
+consequences, and help an agent choose before it acts. Yet their most important
+commitments—what counts as a legitimate state, which fragments of evidence may
+be combined, and what authority an imagined plan presupposes—are usually left
+implicit. This paper argues that dependent type theory offers a way to make
+those commitments explicit and machine-checkable. We introduce the notion of a
+\emph{proof-carrying world model}: a learned simulator whose states and
+transitions arrive with evidence that they satisfy the conditions under which
+they may be used. To make the idea intuitive, we begin with a simple
+construction in which a world description is assembled from compatible local
+patches, much as a map is assembled from non-conflicting survey notes. Partial
+commutative monoids (PCMs) then appear as the resource-sensitive sharpening of
+that picture, giving the Rocq proof assistant a precise language for saying
+when pieces of a model may be joined and when they must remain apart. We also
+relate this view to Joint Embedding Predictive Architecture (JEPA), whose
+representations are likewise built from agreement across partial views rather
+than exhaustive reconstruction. The result is a research program in which
+learned world models become not only predictive, but also explicit about the
+structure, scope, and admissibility of what they claim to know.
 \end{abstract}
 
 \bigskip
@@ -106,48 +111,70 @@ programs, alignment.
 \section{Introduction}
 %% ─────────────────────────────────────────────────────────────────────────────
 
-The success of model-based reinforcement learning (MBRL) over the past decade
-rests on a single insight: an agent that can simulate its environment can plan
-efficiently without exhausting the real environment in trial
-\citep{sutton1990dyna, ha2018world, hafner2019dream, schrittwieser2020mastering}.
-The learned simulator—often called a \emph{world model}—compresses sensory
-history into a compact latent state, predicts the consequences of candidate
-actions, and thereby enables forward search at a fraction of the sample cost
-required by purely reactive approaches
-\citep{hafner2023mastering, ye2021efficientzero}.
+One of the most consequential ideas in artificial intelligence is that an agent
+need not meet the world only in the instant. It may, before acting, carry an
+inner stage on which candidate futures can be rehearsed. In model-based
+reinforcement learning, that stage is the world model: a learned internal
+simulator that compresses experience into a latent state and uses that state to
+forecast what actions might bring about
+\citep{sutton1990dyna, ha2018world, hafner2019dream, schrittwieser2020mastering,
+hafner2023mastering, ye2021efficientzero}. The practical appeal is easy to see.
+An agent that can imagine cheaply does not need to experiment as recklessly in
+reality.
 
-Despite this empirical progress, world models share a structural limitation
-with most learned systems: their internal representations carry no
-machine-verifiable account of what they are permitted to represent or
-what invariants they are committed to preserving. Admissibility conditions,
-scope constraints, and capability limits are expressed, when they are expressed
-at all, in natural language documentation, external monitors, or post-hoc
-audits. They are, in the language of software engineering, \emph{extrinsic} to
-the model rather than \emph{intrinsic} to it.
+The idea has also widened. In one lineage, world models are used explicitly for
+planning. In another, adjacent lineage, predictive systems such as Joint
+Embedding Predictive Architecture (JEPA) learn latent representations by asking
+what one partial view of a situation should allow a system to say about another
+\citep{lecun2022path, assran2023ijepa}. These models do not insist on
+reconstructing every pixel or every sensory detail. They aim instead for a more
+selective kind of understanding: enough internal structure to support
+prediction, abstraction, and downstream decision-making.
 
-This paper argues that dependent type theory provides the missing vocabulary.
-In a dependently typed setting, an object may carry, as part of its very type,
-a machine-checked proof that it satisfies the conditions required for its use.
-Proof need not arrive as a chaperone after the fact; it can accompany the value
-from the moment of construction. We draw in particular on the Rocq proof
-assistant \citep{coq2024} and on the FCSL-PCM library \citep{nanevski2019fcsl},
-which develops partial commutative monoids (PCMs) as a clean algebraic model
-of separable, composable resources.
+And yet the central mystery remains curiously underdescribed. A latent state in
+most current systems is useful, trainable, and often powerful, but semantically
+reticent. It carries little machine-checkable explanation of what it is allowed
+to represent, which fragments of evidence may be combined into it, or what
+constraints its imagined futures are supposed to respect. These commitments, if
+they are written down at all, typically live outside the model—in design docs,
+policy layers, runtime checks, or after-the-fact audits.
+
+This paper argues that dependent type theory offers a way to move some of that
+structure inward. In a dependently typed setting, a value can travel together
+with evidence that it satisfies the conditions required for its use. Proof need
+not arrive as a bureaucratic seal applied later; it can accompany the object at
+the moment of construction. We draw in particular on the Rocq proof assistant
+\citep{coq2024} and on the FCSL-PCM library \citep{nanevski2019fcsl}, which
+develops partial commutative monoids (PCMs) as a disciplined language for
+describing how separable resources may and may not be composed.
+
+Before reaching PCMs, however, there is a gentler picture. One can think of a
+world model as something assembled from local patches: a few observations here,
+a capability token there, a short trace of what happened when an action was
+taken. Some patches fit together; some contradict one another; some describe
+different parts of a larger whole. This patchwork intuition is simple enough to
+grasp in ordinary language, yet it already begins to sound like the latent
+geometry of JEPA, where partial views are asked to predict one another, and
+like the formal discipline of Rocq, where admissible constructions must be
+stated explicitly. Our claim is that these are not isolated ideas but adjacent
+ways of describing the same aspiration: a learned internal model that is both
+predictive and clear about the terms on which its pieces fit.
 
 Our contributions are:
 \begin{enumerate}
   \item A conceptual framework—the \emph{proof-carrying world model}—that
     articulates how dependent types can annotate the operational interfaces of
     a learned simulator (\S\ref{sec:framework}).
-  \item An account of how PCMs, originally developed for separation-logic
-    reasoning over heap memory, can be reinterpreted as a compositional
-    semantics for agent observation histories and capability scopes
-    (\S\ref{sec:pcm}).
+  \item A gentler mathematical bridge from compatible local patches to PCMs,
+    showing how an intuitive gluing picture can mature into a resource-aware
+    semantics for agent histories, capability scopes, and latent predictive
+    structure (\S\ref{sec:pcm}).
   \item Small Rocq formalizations illustrating these ideas, from basic
     proof-carrying state through typed rollout traces to heap-style ownership
     of sensor boundaries (\S\ref{sec:rocq}).
-  \item A discussion of research directions, including connections to
-    alignment-aware planning and multi-agent trust (\S\ref{sec:discussion}).
+  \item A discussion of research directions, including explicit connections to
+    JEPA-style predictive learning, alignment-aware planning, and multi-agent
+    trust (\S\ref{sec:discussion}).
 \end{enumerate}
 
 We do not claim a complete implementation. We offer a research direction and
@@ -160,39 +187,57 @@ a working vocabulary for future development.
 
 \subsection{World Models in Reinforcement Learning}
 
-A world model, in the MBRL sense, is a parametric function
-$f_\theta : \mathcal{Z} \times \mathcal{A} \to \mathcal{Z} \times \mathcal{R}$
-mapping a latent state $z \in \mathcal{Z}$ and action $a \in \mathcal{A}$ to a
-predicted successor state and reward signal. Practical systems augment this
-with encoder and decoder networks that map between observation space and latent
-space, and with planning modules—cross-entropy method \citep{botev2013cem},
-Monte Carlo Tree Search \citep{coulom2006mcts}, or learned value functions
-\citep{hafner2023mastering}—that search over imagined trajectories.
+A world model, in the narrow reinforcement-learning sense, is a learned
+surrogate for the dynamics of an environment. Formally one may write it as a
+map $f_\theta : \mathcal{Z} \times \mathcal{A} \to \mathcal{Z} \times
+\mathcal{R}$, sending a latent state and an action to a predicted successor
+state and reward. But that notation only hints at the broader intuition. A
+world model is a compressed, internal picture of how things change: what tends
+to follow what, which possibilities remain open, and which imagined futures are
+worth spending computation on.
 
-Key empirical milestones include Dyna \citep{sutton1990dyna}, which first
-demonstrated the efficiency of planning inside a learned model; World Models
-\citep{ha2018world}, which popularized recurrent variational world models for
-visual tasks; DreamerV1–V3 \citep{hafner2019dream, hafner2021mastering,
-hafner2023mastering}, which showed that long-horizon imagination can match or
-exceed model-free baselines; and MuZero \citep{schrittwieser2020mastering},
-which learned a model sufficient for planning without requiring faithful
-reconstruction of observations.
+The modern lineage is familiar. Dyna first made explicit the advantage of
+learning and planning in tandem \citep{sutton1990dyna}. Ha and Schmidhuber's
+World Models popularized the image of an agent dreaming inside its own latent
+space \citep{ha2018world}. Dreamer and its successors showed that long-horizon
+imagination could become a practical engine for control
+\citep{hafner2019dream, hafner2021mastering, hafner2023mastering}. MuZero and
+EfficientZero demonstrated that one need not reconstruct the visible world in
+full detail in order to plan effectively \citep{schrittwieser2020mastering,
+ye2021efficientzero}.
 
-A recurring theme is the tension between \emph{predictive accuracy} and
-\emph{structural fidelity}. Predictively accurate models may still fail to
-capture the constraints—resource limits, scope boundaries, capability
-revocations—that govern what a system is permitted to do, as distinct from
-what it expects to happen. This gap is the starting point for our proposal.
+JEPA extends the same family resemblance in a slightly different direction.
+Rather than learning to regenerate an entire input, a JEPA-style system learns
+to predict the representation of a withheld target view from an available
+context view \citep{lecun2022path, assran2023ijepa}. What matters is not visual
+fidelity but predictive sufficiency: the latent state should preserve the
+structure needed to say something reliable about what lies beyond the current
+glimpse. In that sense, JEPA is not a departure from the world-model story so
+much as a sharpening of one of its oldest instincts.
+
+Across these traditions, a recurring tension remains between \emph{predictive
+skill} and \emph{explicit meaning}. A model may be extraordinarily good at
+forecasting what happens next and still be silent about what sort of state it
+is claiming to inhabit, what sources of evidence it has mixed together, and
+what operational limits should govern its use. This gap is the starting point
+for our proposal.
 
 \subsection{Dependent Type Theory and the Rocq Proof Assistant}
 
-Dependent type theory \citep{martin-lof1984, coquand1988calculus} extends the
-Curry–Howard correspondence \citep{howard1980, wadler2015propositions} so that
-types may contain, and depend upon, ordinary program values. A type such as
-$\mathsf{Vec}(n)$—a vector of exactly $n$ elements—encodes a length invariant
-that the type-checker enforces at compile time, without separate runtime
-assertion. More generally, a value of type $\{x : A \mid P(x)\}$ is both a
-value in $A$ and a proof of $P(x)$, inseparably.
+Dependent type theory \citep{martin-lof1984, coquand1988calculus} begins from a
+simple but powerful thought: the description of an object may be allowed to
+mention the object itself. Instead of saying merely ``this is a vector,'' one
+may say ``this is a vector of length $n$,'' and insist that $n$ be part of the
+object's type. A familiar example is $\mathsf{Vec}(n)$, the type of vectors of
+exactly $n$ elements. More generally, a value of type $\{x : A \mid P(x)\}$ is
+both a value in $A$ and evidence that it satisfies $P(x)$.
+
+For readers outside formal methods, the philosophical point matters more than
+the notation. In an ordinary program, one often constructs a value first and
+checks later whether it meets the relevant conditions. In a dependently typed
+program, one can require those conditions at birth. Some classes of mismatch
+never become runtime problems because the system refuses to construct the wrong
+object in the first place.
 
 Rocq (formerly Coq) \citep{coq2024} implements the Calculus of Inductive
 Constructions \citep{coquand1988calculus, paulin-mohring2015}, a rich
@@ -210,6 +255,35 @@ dependent type theory supporting:
 The MathComp library \citep{gonthier2013odd} and the FCSL-PCM library
 \citep{nanevski2019fcsl} provide mature algebraic foundations—including Boolean
 reflection, finite maps, and partial commutative monoids—on which we build.
+
+\subsection{Compatible Patches Before Algebra}
+
+Before introducing PCMs, it helps to start with a more ordinary picture.
+Suppose a world is not given all at once, but only in pieces: a short sensor
+trace, a geometric hint about a hidden object, a note that a certain action is
+currently permitted. The simplest mathematical way to model such fragments is
+as \emph{finite partial maps}: small tables that assign values only where the
+agent currently knows something.
+
+\begin{definition}[Compatible patch family]
+Let $I$ be an index set and $V$ a set of values. A \emph{patch} is a finite
+partial function $p : I \rightharpoonup V$. Two patches $p$ and $q$ are
+\emph{compatible} when they agree wherever both are defined, that is,
+\[
+\forall i \in \mathrm{dom}(p) \cap \mathrm{dom}(q), \; p(i) = q(i).
+\]
+When $p$ and $q$ are compatible, their glued union $p \sqcup q$ is the obvious
+combined partial map on $\mathrm{dom}(p) \cup \mathrm{dom}(q)$.
+\end{definition}
+
+This is the mathematics of an atlas, a notebook, or a map made from local
+surveys. A larger picture can be assembled when the smaller pictures do not
+contradict one another where they meet. Category theorists would recognize a
+sheaf-like gluing intuition in the background, but the concrete finite-map
+version is already enough for our purposes. It gives a first-principles answer
+to the question ``what does it mean to build a world model from scratch?'' One
+begins not with a monolithic state, but with admissible pieces that can be
+assembled into one.
 
 \subsection{Partial Commutative Monoids}
 
@@ -229,12 +303,21 @@ When $\mathsf{valid}(x \oplus y)$ fails, $x \oplus y$ returns a distinguished
 \emph{undefined} element $\mathsf{Undef}$.
 \end{definition}
 
+The easiest way to read this definition is as a resource-sensitive refinement of
+the patch picture above. Compatible patches asked only whether two local
+descriptions could coexist. A PCM asks the stricter question that software and
+agents often face in practice: can these fragments be \emph{jointly held or
+used} without conflict? In some settings, overlap with agreement is harmless;
+in others—ownership, authority, leased capabilities, authored histories—overlap
+itself is exactly what must be controlled.
+
 PCMs arose in the context of separation logic \citep{reynolds2002sl,
 ohearn2019sl} as the canonical semantic domain for \emph{separating
-conjunction}: two resources $x$ and $y$ may be combined if and only if their
-join is valid—that is, they do not overlap or conflict. The FCSL-PCM library
-\citep{nanevski2019fcsl} provides a rich Rocq hierarchy of PCM instances,
-including heap-like finite maps, which we repurpose in \S\ref{sec:pcm}.
+conjunction}: two resources may be combined precisely when their join is valid.
+The FCSL-PCM library \citep{nanevski2019fcsl} provides a rich Rocq hierarchy of
+PCM instances, including heap-like finite maps. We repurpose that discipline
+here, not because world models are literally heaps, but because the question of
+which fragments may be safely composed is central to both.
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{A Framework for Proof-Carrying World Models}
@@ -243,22 +326,19 @@ including heap-like finite maps, which we repurpose in \S\ref{sec:pcm}.
 
 \subsection{Motivation}
 
-The latent state $z$ of a world model typically has no intrinsic type other
-than ``tensor of floats.'' Its admissibility—whether it encodes a state the
-system is permitted to reason about—is enforced, if at all, by external
-wrappers, evaluation callbacks, or human review. We propose to make
-admissibility \emph{intrinsic}: the type of a latent state should include
-evidence of its own legitimacy.
+Most learned latent states are described, at bottom, as arrays of numbers. That
+description is enough for optimization, but it says very little about meaning.
+It does not say whether the state was assembled from compatible evidence,
+whether it presupposes a certain capability scope, or whether it is even the
+kind of state a planner should be allowed to imagine from. Those judgments are
+usually external to the model.
 
-More concretely, consider a multi-agent planning system in which different
-submodels govern different capability scopes—one model has read access to
-sensor $S_1$, another controls actuator $A_3$. In a conventional architecture,
-scope enforcement is handled by runtime checks, policy tables, or
-application-level guards that sit outside the model itself. A dependently typed
-architecture would express scope as part of the type of the state: the type of
-``state with actuator $A_3$ capability'' literally differs from the type of
-``state without it.'' Scope confusion becomes a type error, detected before
-execution.
+Our proposal is to make admissibility \emph{intrinsic}. If a state is meant to
+stand for ``a history built from non-conflicting observations under capability
+scope $\kappa$,'' then its type should say so. If a plan is meant to require
+certain permissions, the need for those permissions should be visible in the
+plan's construction. Scope confusion then ceases to be a policy bug discovered
+late; it becomes a type error discovered early.
 
 \subsection{Proof-Carrying State}
 
@@ -272,10 +352,9 @@ $\mathsf{Adm} : S \to \mathsf{Prop}$ be an admissibility predicate. A
 \mathsf{Adm}(s)$.
 \end{definition}
 
-The key property is that proof-carrying states \emph{cannot be constructed in
-an inadmissible configuration}: construction of the pair requires producing the
-proof $h$ simultaneously with the value $s$. There is no window between
-construction and certification.
+The key property is psychological as well as technical. One is no longer asked
+to trust that a state has been blessed somewhere upstream. The blessing is part
+of the object. Construction and certification occur together, or not at all.
 
 \subsection{Proof-Carrying World Model Interface}
 
@@ -316,28 +395,40 @@ End TypedWorld.
 
 The \texttt{State} is parameterized by an arbitrary PCM, so the framework is
 not committed to any particular representation; heap-like finite maps, trace
-histories, and richer algebraic structures are all valid instantiations.
+histories, and richer algebraic structures are all valid instantiations. A
+JEPA-style model can be read through the same interface: the observable context
+builds a typed state, the predictive step imagines a target representation, and
+the surrounding proofs state what kinds of context are sufficient for what
+kinds of prediction.
 
 %% ─────────────────────────────────────────────────────────────────────────────
-\section{PCMs as Compositional Semantics for Agent Histories}
+\section{From Compatible Patches to Resource-Sensitive World Models}
 \label{sec:pcm}
 %% ─────────────────────────────────────────────────────────────────────────────
 
-\subsection{From Heap Reasoning to History Composition}
+\subsection{From Local Patches to History Composition}
 
-Separation logic was designed to reason locally: a Hoare triple in separation
-logic is valid for a fragment of the heap, and the frame rule extends it to
-arbitrarily larger heaps that the procedure does not touch
-\citep{reynolds2002sl}. The key semantic enabler is that heap composition via
-$\oplus$ is defined only when the constituent fragments are disjoint—capturing
-the intuition that two independent computations cannot silently share state.
+The compatible-patch picture gives us a gentle beginning: pieces of a world may
+be glued when they agree. But systems that act in the world often need a
+stricter discipline. A history should not contain two independently authored
+entries for the same moment unless one has said exactly how such conflicts are
+resolved. A capability scope should not silently duplicate authority. A leased
+resource should not be owned twice simply because two tables happen to list the
+same symbol.
 
-We propose an analogous discipline for world model histories. An
-\emph{observation history} is a finite map from timesteps to observation
-records; a \emph{capability scope} is a finite map from capability identifiers
-to authorization witnesses. Two such fragments can be joined if and only if
-their key sets are disjoint—that is, if they record disjoint portions of the
-agent's experience or authority.
+This is where the PCM point of view earns its keep. Separation logic was
+designed to reason locally: a proof may concern one fragment of the heap, and
+the frame rule extends it to larger heaps the code does not touch
+\citep{reynolds2002sl}. The semantic engine underneath is that composition via
+$\oplus$ is defined only when the relevant fragments can be combined without a
+resource conflict. We propose an analogous discipline for world-model state.
+
+An \emph{observation history} may be represented as a finite map from timesteps
+to observation records, while a \emph{capability scope} may be represented as a
+finite map from capability identifiers to authorization witnesses. These are
+still local pieces of a larger picture. The difference is that now we are not
+merely asking whether they tell a consistent story; we are asking whether they
+may be held together as a single admissible resource.
 
 \begin{definition}[History PCM]
 Let $\mathcal{T}$ be a countable set of timesteps and $\mathcal{O}$ a set of
@@ -358,8 +449,38 @@ This is exactly the PCM of disjoint-key finite maps, realized in Rocq by
 
 Under this reading, combining two histories is only valid if they record
 distinct moments in time. Conflicting entries—two agents writing different
-observations for the same timestep—produce an undefined result, signaling a
-representational conflict that the planner must not silently resolve.
+observations for the same timestep—produce an undefined result. The point is
+not pedantry. It is to refuse the quiet habit, common in learned systems, of
+allowing incompatible evidence to blur into a single latent state with no clear
+account of how the contradiction was handled.
+
+\subsection{JEPA and the Grammar of Partial Views}
+
+The connection to JEPA is closer than it first appears. A JEPA-style system is
+trained on the belief that one partial view of a situation should determine a
+useful prediction about another partial view \citep{lecun2022path,
+assran2023ijepa}. It is, in spirit, a theory of world understanding through
+fragments. One sees a portion of the scene, forms an internal representation,
+and asks what that representation licenses one to expect about what remains
+hidden.
+
+The compatible-patch picture offers a mathematical idiom for this intuition.
+Context and target can be understood as partial descriptions of a larger world;
+the learned representation is valuable insofar as it preserves the structure
+that makes those descriptions cohere. The difference is that JEPA learns this
+coherence statistically, from data, whereas PCM-based reasoning states certain
+forms of coherence explicitly, in logic. The opportunity lies in the overlap.
+One can imagine a system in which learned joint embeddings supply compact
+predictive patches, while Rocq certifies when such patches may be composed,
+which scopes they presuppose, and what kinds of downstream planning claims they
+are allowed to justify.
+
+Seen this way, PCM is not a rival to JEPA but a complement. JEPA says that a
+useful latent state need not reconstruct everything; it need only preserve what
+matters for prediction. PCM says that a useful latent state should also come
+with rules for composition: which fragments can be joined, which authorities
+travel with them, and when an attempted merge should simply be declared
+inadmissible.
 
 \subsection{Typed Rollout Traces}
 
@@ -388,34 +509,34 @@ Definition extend_trace (r : rollout) (t reward : nat) :=
 \end{lstlisting}
 
 The \texttt{extend\_trace} function is partial: it returns \texttt{None}
-whenever the new timestep is zero (a sentinel for invalid time) or whenever
-the new entry conflicts with an existing entry in the map. This partiality is
-not an error condition to be caught at runtime; it is the honest signature of
-an operation that may legitimately fail to produce a valid result.
+whenever the new timestep is zero (a sentinel for invalid time) or whenever the
+new entry conflicts with an existing entry in the map. The important point is
+conceptual. Partiality here is not a programming inconvenience but a faithful
+description of the mathematics. Some attempted extensions really do fail to
+produce a coherent world fragment, and the type should say so.
 
 \subsection{Capability Scopes as Resource Types}
 
-Beyond observation histories, PCMs provide a natural model for
-\emph{capability scopes}—the set of actions an agent is currently authorized
-to perform. We represent a capability scope as a finite map from capability
-identifiers to authorization tokens (represented, for simplicity, as natural
-numbers). Two scopes may be combined only if they govern disjoint sets of
-capabilities. An agent attempting to act under a capability it does not hold
-faces a type error at the point of action construction, not a runtime
-permission denial.
+PCMs also model \emph{capability scopes}: the actions an agent is currently
+authorized to perform. We represent a scope as a finite map from capability
+identifiers to authorization tokens. Two scopes may be combined only if they
+govern disjoint sets of capabilities. An agent attempting to act under a
+capability it does not hold faces a type error at the point of action
+construction, not a runtime permission denial.
 
-This design separates two concerns that are often conflated in practice:
-\emph{what an agent expects to happen} (the predictive content of the world
-model) and \emph{what an agent is permitted to cause} (the normative content,
-now encoded in types). Violations of the latter are detected constructively,
-before any real-world action is taken.
+This design clarifies a distinction that learned systems often blur: the
+difference between what a model predicts and what a system is entitled to do.
+JEPA-style prediction may furnish a powerful account of what latent structure is
+present; typed resource semantics can add a separate account of which actions
+that structure licenses. The two together suggest a world model that is both
+perceptive and disciplined.
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{Illustrative Rocq Formalizations}
 \label{sec:rocq}
 %% ─────────────────────────────────────────────────────────────────────────────
 
-\subsection{Proof-Carrying State: A Minimal Example}
+\subsection{A Tiny Example of Proof-Carrying State}
 
 Before introducing PCM structure, we illustrate the simplest instance of
 proof-carrying state: a rollout record whose \texttt{horizon} field is
@@ -440,11 +561,13 @@ Definition single_action (a : nat) : CheckedRollout :=
 
 The field \texttt{horizon\_matches} is not a runtime assertion but a proof
 term. It is discharged by \texttt{eq\_refl} at the point of construction,
-confirming that the singleton list \texttt{[a]} has length~1. A \texttt{CheckedRollout}
-with mismatched horizon cannot be constructed; the attempt would produce a type
-error.
+confirming that the singleton list \texttt{[a]} has length~1. A
+\texttt{CheckedRollout} with mismatched horizon cannot be constructed; the
+attempt would produce a type error. This is the paper's basic promise in
+miniature: if a state claims to summarize a horizon, that claim can be made
+part of the object rather than an informal comment about it.
 
-\subsection{Sensor Ownership via Heap-Style PCMs}
+\subsection{Resource Ownership at the Sensor Boundary}
 
 We illustrate resource-typed sensor access using the \texttt{heap} PCM from
 FCSL-PCM. A sensor write is defined to return \texttt{Undef} if the target
@@ -471,10 +594,12 @@ Qed.
 
 The lemma \texttt{sensor\_write\_preserves\_nonnull} is a machine-checked
 guarantee. Any system that calls \texttt{sensor\_write} on a non-null pointer
-inherits the proof; any downstream code that requires a valid heap fragment
-can accept the result directly.
+inherits the proof; any downstream code that requires a valid heap fragment can
+accept the result directly. The larger moral is that world-model interfaces may
+benefit from the same style of explicit ownership accounting that made formal
+reasoning about mutable state practical.
 
-\subsection{Composing Agent Histories}
+\subsection{Composing Histories Without Ambiguity}
 
 The following sketch demonstrates how two disjoint history fragments may be
 safely combined into a single rollout.
@@ -501,7 +626,10 @@ Proof. by rewrite /obs1 /obs1'; compute. Qed.
 
 These two lemmas capture the core safety property: valid composition is not
 assumed or checked at runtime; it is established once, by proof, and then
-inherited by any code that depends on the composed history.
+inherited by any code that depends on the composed history. In the language of
+the earlier sections, we have moved from the image of compatible patches to a
+precise account of when compatible fragments count as a single admissible
+resource.
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{Discussion and Research Directions}
@@ -519,8 +647,8 @@ is supposed to do? Current approaches rely heavily on reward shaping, RLHF
 surround the model with evaluative signals rather than embedding constraints
 within its representational structure.
 
-A proof-carrying world model offers a complementary approach. By requiring
-that high-stakes action types carry typed witnesses of their preconditions, the
+A proof-carrying world model offers a complementary approach. By requiring that
+high-stakes action types carry typed witnesses of their preconditions, the
 planning procedure is structurally prevented from producing plans that would
 violate stated constraints—not because a guard intercepts the output, but
 because the output type cannot be constructed without the required evidence. The
@@ -534,15 +662,22 @@ only exercise the capabilities enumerated in $\kappa$. The planner's type
 signature then enforces that it cannot produce an action requiring capability
 $c$ unless $c \in \kappa$. Scope escalation becomes a type error.
 
+The JEPA connection matters here as well. If a predictive model is trained to
+infer withheld structure from partial context, the question naturally follows:
+what kinds of context are sufficient for which kinds of action? Dependent types
+offer a way to state that question sharply. A latent prediction can be treated
+not as a free-floating hint, but as an object whose admissible uses are tied to
+the evidence from which it was formed.
+
 \subsection{Multi-Agent Trust and Fragment Provenance}
 
 In multi-agent settings, observations arrive from diverse sources with varying
 degrees of trust. A dependently typed world model can represent this by
 annotating observation histories with \emph{provenance types}: a history of
 type $\mathsf{Hist}(\tau)$ was collected under trust level $\tau$, and the
-type system can enforce that a planner operating under trust level $\tau'$
-may only act on histories whose provenance satisfies $\tau' \preceq \tau$ for
-some trust ordering $\preceq$.
+type system can enforce that a planner operating under trust level $\tau'$ may
+only act on histories whose provenance satisfies $\tau' \preceq \tau$ for some
+trust ordering $\preceq$.
 
 The PCM structure ensures that joining histories of incompatible provenance
 produces an \texttt{Undef} result rather than a silently untrusted composite.
@@ -566,9 +701,11 @@ specification that interoperates naturally with proof-assistant toolchains.
 This is complementary to, rather than in competition with, techniques for
 verifying the \emph{internals} of neural networks. A world model whose
 interface carries machine-checked guarantees can be composed with a certifying
-planner even if the neural weights themselves remain opaque. The typed
-interface becomes the contract between the learned and the verified parts of
-the system.
+planner even if the neural weights themselves remain opaque. This point is
+especially suggestive for JEPA-style systems, whose learned embeddings are
+compact and predictive but not always semantically explicit. A typed interface
+offers a place where those embeddings may acquire precise obligations without
+forcing the entire learning procedure into symbolic form.
 
 \subsection{Toward a Full Formal Development}
 
@@ -577,8 +714,8 @@ complete verified system. A full development would require:
 \begin{enumerate}
   \item A Rocq formalization of the world model interface parameterized by an
     arbitrary PCM, with proofs of the stated closure properties.
-  \item A typed rollout algebra: a Rocq structure capturing the sequential
-    composition of proof-carrying transitions under horizon constraints.
+  \item A typed patch algebra for context and target views, sufficient to model
+    JEPA-style predictive interfaces alongside sequential rollout constraints.
   \item A formalization of capability scopes as PCMs over finite maps of
     authorization tokens, with lifting lemmas connecting scope composition to
     the planning type.
@@ -598,7 +735,7 @@ interfaces have been explored in the context of verified task planners
 %% ─────────────────────────────────────────────────────────────────────────────
 
 \paragraph{World models.}
-Ha and Schmidhuber's World Models \citep{ha2018world} established the
+Ha and Schmidhuber's World Models \citep{ha2018world} helped establish the
 ``dream-then-act'' paradigm for visual planning. The DreamerV1--V3 series
 \citep{hafner2019dream, hafner2021mastering, hafner2023mastering} demonstrated
 that continuous control and Atari tasks can be mastered through pure
@@ -607,6 +744,17 @@ model without ground-truth reconstruction suffices for search-based planning.
 EfficientZero \citep{ye2021efficientzero} extended this to extreme sample
 efficiency. None of these architectures address typed invariants on the model
 interface.
+
+\paragraph{JEPA and predictive representation learning.}
+LeCun's program for autonomous machine intelligence \citep{lecun2022path}
+argues that useful intelligence should be grounded in predictive world models
+that operate in latent space rather than through exhaustive reconstruction.
+I-JEPA \citep{assran2023ijepa} makes this idea concrete by learning to predict
+target embeddings from context embeddings. Our use of compatible patches and
+typed composition is meant to be complementary: JEPA supplies a modern account
+of how predictive latent structure may be learned, while Rocq and PCM-like
+semantics supply a way to say, with precision, what kinds of fragments may be
+combined and what such combinations authorize.
 
 \paragraph{Formal methods and learning.}
 Seshia et al.\ \citep{seshia2018formal} survey formal specification and
@@ -619,7 +767,7 @@ correctness proofs; our work proposes that learned interfaces can participate
 in such developments.
 
 \paragraph{Separation logic and resources.}
-Reynolds \citep{reynolds2002sl} introduced separation logic; O'Hearn
+Reynolds \citep{reynolds2002sl} introduced separation logic. O'Hearn
 \citep{ohearn2019sl} surveys two decades of development. Nanevski et al.\
 \citep{nanevski2019fcsl} develop FCSL as a Hoare-logic framework for
 concurrent separation reasoning, with a mature Rocq library. We repurpose this
@@ -639,27 +787,22 @@ specify the operational interface of the model more precisely.
 \label{sec:conclusion}
 %% ─────────────────────────────────────────────────────────────────────────────
 
-We have argued that the latent states, observation operators, and planning
-procedures of learned world models are appropriate targets for dependent type
-annotation, and that partial commutative monoids provide a natural algebraic
-language for the compositional reasoning this requires. The resulting notion
-of a \emph{proof-carrying world model} shifts certain safety and scope
-guarantees from runtime monitors and external policy tables to the type
-structure of the model itself—making violations detectable before execution
-rather than after.
+We have argued that world models become easier to reason about when they are
+understood as constructions rather than mysteries: first as local patches that
+must fit together, then as resource-sensitive objects whose composition must be
+governed explicitly. Dependent type theory gives this intuition a precise home.
+PCMs provide one especially useful discipline for stating when histories,
+capabilities, and latent fragments may be joined. JEPA, meanwhile, reminds us
+that modern predictive systems are already built around partial views and
+selective sufficiency rather than exhaustive reconstruction. The conceptual gap
+between these traditions is therefore smaller than it first appears.
 
-The proposal is not a complete solution to the deep challenges of learned-agent
-reliability. A world model whose interface is well-typed may still learn an
-inaccurate model of environment dynamics; proof-carrying state does not
-substitute for empirical validity. What it does is ensure that the commitments
-the system makes about scope, provenance, and composition are expressed in a
-form that can be checked mechanically, composed reliably, and depended upon by
-downstream verified components.
-
-In that modest but precise sense, dependent type theory offers machine
-learning something it has rarely been asked to accept: not a new performance
-benchmark, but an obligation to say clearly what it knows—and to carry the
-proof.
+The proposal is not that proofs replace learning. A well-typed world model may
+still be empirically wrong about the world. The proposal is narrower and, for
+that reason, perhaps more realistic: that learned internal models can be asked
+to carry clearer commitments about admissibility, composition, and use. If a
+system is going to imagine on our behalf, it is reasonable to ask that its
+imagination come with terms.
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \bibliographystyle{plainnat}
