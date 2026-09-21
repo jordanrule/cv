@@ -41,24 +41,11 @@
   comment=[l]{(*},
   commentstyle=\color{rocqgray}\itshape,
   stringstyle=\color{rocqgreen},
-  morestring=[b]",
-  sensitive=true,
-  basicstyle=\ttfamily\small,
-  backgroundcolor=\color{panelbg},
-  frame=single,
-  framerule=0.4pt,
-  rulecolor=\color{rocqgray!60},
-  breaklines=true,
-  captionpos=b,
-  xleftmargin=1.2em,
-  xrightmargin=0.6em,
-  aboveskip=0.8em,
-  belowskip=0.6em
+  morestring=[b]"
 }
 
 \lstset{language=Rocq}
 
-% ---- theorem environments ----
 \newtheorem{definition}{Definition}[section]
 \newtheorem{proposition}{Proposition}[section]
 \newtheorem{remark}{Remark}[section]
@@ -68,145 +55,54 @@
   \large Toward Proof-Carrying Learned Simulators}
 \author{Jordan Rule\\[0.2em]
   \small \texttt{jrule@uchicago.edu}}
-\date{August 2026}
 
 \begin{document}
-
 \maketitle
-\thispagestyle{empty}
 
-% ---- abstract ----
 \begin{abstract}
-\noindent
-World models are the internal working pictures through which modern learning
-systems rehearse possible futures. They compress experience, imagine
-consequences, and help an agent choose before it acts. Yet their most
-important commitments---what a latent state is allowed to mean, when evidence
-is sufficient for planning, and which actions are legitimate under uncertainty
----are often left implicit. This paper argues that dependent type theory offers
-a practical way to make those commitments explicit and machine-checkable. We
-introduce the notion of a \emph{proof-carrying world model}: a learned
-simulator whose states, predictions, and action proposals carry evidence that
-their preconditions are met. We connect this view to Joint Embedding Predictive
-Architecture (JEPA), where learning already proceeds from partial views toward
-predictive sufficiency rather than exhaustive reconstruction. The result is a
-research program in which world models remain empirical and data-driven while
-becoming clearer about admissibility, provenance, and safe use in multi-agent
-settings.
+A learned world model is more than a predictor. It is a compact theory of what an
+agent can currently say about the world, what it can safely imagine next, and
+what parts of that imagination are still grounded in evidence. This paper argues
+that dependent type theory gives that theory a clearer grammar. By carrying
+admissibility evidence with latent state, a system can distinguish between raw
+representation and representation that is ready to guide action.
 \end{abstract}
 
-\bigskip
-\noindent\textit{Keywords:} world models, dependent type theory, Rocq, JEPA,
-model-based reinforcement learning, proof-carrying programs, alignment,
-multi-agent systems.
-
-\newpage
-
-%% ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
-%% ─────────────────────────────────────────────────────────────────────────────
 
-One of the most consequential ideas in artificial intelligence is that an agent
+One of the most consequential ideas in modern machine learning is that an agent
 need not meet the world only in the instant. It may, before acting, carry an
-inner stage on which candidate futures can be rehearsed. In model-based
-reinforcement learning, that stage is the world model: a learned internal
-simulator that compresses experience into a latent state and uses that state to
-forecast what actions might bring about
-\citep{sutton1990dyna, ha2018world, hafner2019dream, schrittwieser2020mastering,
-hafner2023mastering, ye2021efficientzero}. The practical appeal is easy to see.
-An agent that can imagine cheaply does not need to experiment as recklessly in
-reality.
+internal stage on which candidate futures are rehearsed. In model-based learning,
+that stage is the world model: a learned internal simulator that compresses
+experience into latent state and uses that state to forecast what actions might
+bring about.
 
-The idea has also widened. In one lineage, world models are used explicitly for
-planning. In another, adjacent lineage, predictive systems such as Joint
-Embedding Predictive Architecture (JEPA) learn latent representations by asking
-what one partial view of a situation should allow a system to say about another
-\citep{lecun2022path, assran2023ijepa}. These models do not insist on
-reconstructing every pixel or every sensory detail. They aim instead for a more
-selective kind of understanding: enough internal structure to support
-prediction, abstraction, and downstream decision-making.
+The practical appeal is easy to see. An agent that can imagine cheaply does not
+need to experiment as recklessly in the world. But there is a second question
+beneath the first: what, exactly, is the model allowed to treat as a usable state?
+A representation may be useful and still be too thin to justify action. It may be
+predictive and still be unclear about its own scope. The purpose of this paper is
+to make that scope visible.
 
-And yet the central mystery remains curiously underdescribed. A latent state in
-most current systems is useful, trainable, and often powerful, but semantically
-reticent. It carries little machine-checkable explanation of what it is allowed
-to represent, which fragments of evidence may be combined into it, or what
-constraints its imagined futures are supposed to respect. These commitments, if
-they are written down at all, typically live outside the model—in design docs,
-policy layers, runtime checks, or after-the-fact audits.
+Dependent type theory begins from a simple but powerful thought: the description
+of a thing may be allowed to mention the thing itself. In that setting, one can
+attach evidence to a value and ask the type system to remember the conditions
+under which the value is legitimate for use. Rocq provides a practical setting
+for this style of thought, and it is the setting used throughout the examples
+here.
 
-This paper argues that dependent type theory offers a way to move some of that
-structure inward. In a dependently typed setting, a value can travel together
-with evidence that it satisfies the conditions required for its use. Proof need
-not arrive as a bureaucratic seal applied later; it can accompany the object at
-the moment of construction. We draw in particular on the Rocq proof assistant
-\citep{coq2024}, using dependent records and constructive proofs to make world
-model interfaces explicit.
+The result is not a theory of policing, but a theory of composition. A world
+model can be treated as an atlas of partial views, with local predictive pieces
+that overlap, align, and sometimes refuse to fit. The interesting question is not
+whether any single view is complete, but whether the views can be assembled into
+a cohesive latent space whose admissibility claims are explicit enough to travel
+with the representation.
 
-Before any formal machinery, however, there is a gentler picture. One can think
-of a world model as something assembled from partial views: a few observations
-here, a capability hint there, a short trace of what happened when an action was
-taken. Some views fit together; some contradict one another; some are simply too
-thin to justify high-confidence plans. This patchwork intuition is simple enough
-to grasp in ordinary language, yet it already echoes JEPA's core move: learn to
-predict what is hidden from what is seen, without pretending to know everything.
-Our claim is that dependent types can give this predictive practice a clearer
-grammar of admissible use.
-
-Our contributions are:
-\begin{enumerate}
-  \item A conceptual framework---the \emph{proof-carrying world model}---that
-    articulates how dependent types can annotate the operational interfaces of
-    a learned simulator (\S\ref{sec:framework}).
-  \item A practical bridge from partial views to typed predictive contracts,
-    showing how JEPA-style representation learning can be coupled to explicit
-    admissibility obligations for planning under uncertainty
-    (\S\ref{sec:bridge}).
-  \item Small Rocq formalizations illustrating these ideas, from basic
-    proof-carrying state through typed context-target prediction and
-    evidence-aware action proposals (\S\ref{sec:rocq}).
-  \item A discussion of research directions, including explicit connections to
-    alignment-aware planning and multi-agent trust (\S\ref{sec:discussion}).
-\end{enumerate}
-
-We do not claim a complete implementation. We offer a research direction and
-a working vocabulary for future development.
-
-Figure~\ref{fig:agenda-stack} provides a compact visual of the agenda: local
-predictive artifacts feed shared admissibility checks, which in turn stabilize
-a JEPA-style planning interface.
-
-\begin{figure}[t]
-\centering
-\fbox{%
-\begin{minipage}{0.92\linewidth}
-\centering
-\small
-\textbf{Research Agenda Stack: From Local Predictive Artifacts to a Verified JEPA Interface}\\[0.6em]
-\begin{tabular}{c}
-\fbox{\parbox{0.84\linewidth}{\centering
-Distributed teams publish local artifacts\\
-$\mathcal{A}_i = (\text{partial views}_i,\, \text{typed obligations}_i,\, \text{predictive patches}_i)$
-}} \\
-$\Downarrow$ \\
-\fbox{\parbox{0.84\linewidth}{\centering
-Shared Rocq refinement checks align admissibility rules across artifacts
-}} \\
-$\Downarrow$ \\
-\fbox{\parbox{0.84\linewidth}{\centering
-Joint embedding training uses only contract-satisfying context-target pairs
-}} \\
-$\Downarrow$ \\
-\fbox{\parbox{0.84\linewidth}{\centering
-Formally constrained JEPA interface for planning and rollout
-}}
-\end{tabular}
-\end{minipage}%
-}
-\caption{Illustrative pipeline for a globally collaborative program. The claim is
-not that learning disappears into logic, but that learned latent updates are
-filtered through shared, explicit admissibility contracts.}
-\label{fig:agenda-stack}
-\end{figure}
+The rest of the paper develops that idea in three steps. First, we review the
+background on world models, JEPA-style representation learning, and dependent
+type theory. Then we develop a framework for proof-carrying world models, with
+checked latent state and compositional admissibility. Finally, we give Rocq
+sketches showing how these ideas can be made concrete.
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{Background}
