@@ -44,7 +44,21 @@
   morestring=[b]"
 }
 
-\lstset{language=Rocq}
+\lstset{
+  language=Rocq,
+  basicstyle=\ttfamily\small,
+  frame=single,
+  rulecolor=\color{rocqblue},
+  backgroundcolor=\color{panelbg},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  breaklines=true,
+  xleftmargin=1em,
+  xrightmargin=1em,
+  aboveskip=0.9em,
+  belowskip=0.9em
+}
 
 \newtheorem{definition}{Definition}[section]
 \newtheorem{proposition}{Proposition}[section]
@@ -60,49 +74,28 @@
 \maketitle
 
 \begin{abstract}
-A learned world model is more than a predictor. It is a compact theory of what an
-agent can currently say about the world, what it can safely imagine next, and
-what parts of that imagination are still grounded in evidence. This paper argues
-that dependent type theory gives that theory a clearer grammar. By carrying
-admissibility evidence with latent state, a system can distinguish between raw
-representation and representation that is ready to guide action.
+A learned world model can be pictured as a latent geometry: many partial
+coordinates, a rule for gluing them, and a gate that turns the glued state into
+an admissible decision. This paper sketches that picture in dependent types,
+where evidence travels with state and action only follows from a state that has
+been composed lawfully.
 \end{abstract}
 
 \section{Introduction}
 
-One of the most consequential ideas in modern machine learning is that an agent
-need not meet the world only in the instant. It may, before acting, carry an
-internal stage on which candidate futures are rehearsed. In model-based learning,
-that stage is the world model: a learned internal simulator that compresses
-experience into latent state and uses that state to forecast what actions might
-bring about.
+One can picture a world model as a cloud of coordinates rather than a single
+point. One coordinate records what is seen, another what is inferred, another
+what is remembered. The interesting question is not whether the cloud is tidy,
+but whether its pieces can be assembled into a state that still supports a safe
+decision.
 
-The practical appeal is easy to see. An agent that can imagine cheaply does not
-need to experiment as recklessly in the world. But there is a second question
-beneath the first: what, exactly, is the model allowed to treat as a usable state?
-A representation may be useful and still be too thin to justify action. It may be
-predictive and still be unclear about its own scope. The purpose of this paper is
-to make that scope visible.
+Dependent type theory gives that picture a small but important discipline. A
+state may carry the evidence that justifies it, and an action may be typed by the
+state that authorizes it. Rocq gives us a concrete language for this discipline.
 
-Dependent type theory begins from a simple but powerful thought: the description
-of a thing may be allowed to mention the thing itself. In that setting, one can
-attach evidence to a value and ask the type system to remember the conditions
-under which the value is legitimate for use. Rocq provides a practical setting
-for this style of thought, and it is the setting used throughout the examples
-here.
-
-The result is not a theory of policing, but a theory of composition. A world
-model can be treated as an atlas of partial views, with local predictive pieces
-that overlap, align, and sometimes refuse to fit. The interesting question is not
-whether any single view is complete, but whether the views can be assembled into
-a cohesive latent space whose admissibility claims are explicit enough to travel
-with the representation.
-
-The rest of the paper develops that idea in three steps. First, we review the
-background on world models, JEPA-style representation learning, and dependent
-type theory. Then we develop a framework for proof-carrying world models, with
-checked latent state and compositional admissibility. Finally, we give Rocq
-sketches showing how these ideas can be made concrete.
+The thread of the paper is simple: compose many partial latent states, demand
+compatibility on overlaps, and only then interpret a next action. The math is
+deliberately light, but the structure matters.
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{Background}
@@ -181,21 +174,25 @@ constructive formalization in Rocq and practical proof engineering at scale.
 
 \subsection{Partial Views, Predictive Sufficiency, and Contracts}
 
-Before introducing heavy formal structure, it helps to start with a familiar
-scene. An agent rarely observes a complete world. It sees fragments: a camera
-crop, a noisy sensor packet, a short action history, a partial map of who said
-what. JEPA-style learning asks what one such fragment should allow us to infer
-about another \citep{lecun2022path, assran2023ijepa}. This is a remarkably
-practical stance for autonomous systems: do not reconstruct everything; recover
-enough structure to make the next decision responsibly.
+Before the formalities, it helps to draw the shape of the claim. Let
+$z = (z_1,\dots,z_n)$ be a multi-dimensional latent state, where each coordinate
+captures a different view of the same situation: perception, memory, context,
+or constraint. The state is admissible only when its coordinates agree enough to
+be read together.
 
-Dependent types sharpen that stance. They let us say: this prediction is usable
-for planning only when certain evidence conditions hold. Instead of treating
-latent vectors as universally admissible, we can treat them as claims with scope.
-Some claims are broad enough for low-risk suggestion. Others are narrow and
-should not authorize consequential actions. The technical language is precise,
-but the intuition is plain: uncertainty is not an afterthought; it is part of
-the object we manipulate.
+\[
+  z = (z_1,\dots,z_n)
+  \quad\longrightarrow\quad
+  \mathsf{Compat}(z_i,z_j)
+  \quad\longrightarrow\quad
+  z^{\star}
+  \quad\longrightarrow\quad
+  a : \mathsf{Next}(z^{\star},\mathsf{Adm}(z^{\star}))
+\]
+
+This is the whole story in miniature. We do not ask a single latent point to do
+all the work. We ask many partial states to align, and then we allow the next
+action only from the aligned result. That is the safety move.
 
 \subsection{From JEPA Representations to Typed Planning}
 
@@ -218,58 +215,43 @@ symbolism; it is to stop treating all latent states as equally action-worthy.
 
 \subsection{Motivation}
 
-Most learned latent states are described, at bottom, as arrays of numbers. That
-description is enough for optimization, but it says very little about meaning.
-It does not say whether the state was assembled from compatible evidence,
-whether it presupposes a certain capability scope, or whether it is even the
-kind of state a planner should be allowed to imagine from. Those judgments are
-usually external to the model.
-
-Our proposal is to make admissibility \emph{intrinsic}. If a state is meant to
-stand for ``a history built from non-conflicting observations under capability
-scope $\kappa$,'' then its type should say so. If a plan is meant to require
-certain permissions, the need for those permissions should be visible in the
-plan's construction. Scope confusion then ceases to be a policy bug discovered
-late; it becomes a type error discovered early.
+We want the latent space to feel less like a flat container and more like a
+surface with overlaps. Let $\mathcal{Z}$ be the carrier set of latent states.
+Let $\mathsf{Adm}$ mark the states that are safe to use, and let
+$\mathsf{Compat}$ say when two pieces can be viewed together. Then admissibility
+is not a label placed on the state after the fact; it is a composite judgment
+made from the pieces that formed it.
 
 \subsection{Proof-Carrying State}
 
-We define a \emph{proof-carrying state} as a dependent record bundling a
-representational value with a machine-checked admissibility witness.
+We define a \emph{proof-carrying state} as a latent state together with the
+witness that it is admissible.
 
 \begin{definition}[Proof-Carrying State]
-Let $S$ be a set of representational states and let
-$\mathsf{Adm} : S \to \mathsf{Prop}$ be an admissibility predicate. A
-\emph{proof-carrying state} is a pair $(s, h)$ where $s \in S$ and $h :
-\mathsf{Adm}(s)$.
+Let $\mathcal{Z}$ be a set of representational states and let
+$\mathsf{Adm} : \mathcal{Z} \to \mathsf{Prop}$ be an admissibility predicate.
+A \emph{proof-carrying state} is a pair $(z, h)$ where $z \in \mathcal{Z}$ and
+$h : \mathsf{Adm}(z)$.
 \end{definition}
 
 The key property is psychological as well as technical. One is no longer asked
 to trust that a state has been blessed somewhere upstream. The blessing is part
 of the object. Construction and certification occur together, or not at all.
 
-For world models, however, it helps to say a little more. Not every state is a
-state in the same sense. There is usually first a \emph{raw latent}: the learned
-representation proposed by an encoder or predictor. Only afterward comes the
-question of whether that latent is fit for use in planning. We therefore
-distinguish between latent vectors as mere numerical summaries and checked
-latents as latent summaries that carry explicit evidence about how they were
-formed.
+For world models, there is usually first a raw latent: a representation proposed
+by perception or prediction. Only later do we ask whether it is fit for action.
+That second step is where the type lives.
 
 \begin{definition}[Raw and Checked Latent State]
-Let $Z$ be a latent space, let $E$ be a space of evidence bundles, and let
-$\mathsf{Formed} : E \times Z \to \mathsf{Prop}$ be a predicate expressing that
-latent $z$ is a well-formed summary of evidence $e$. A \emph{checked latent
-state} is a triple $(z,e,h)$ where $z \in Z$, $e \in E$, and
-$h : \mathsf{Formed}(e,z)$.
+Let $\mathcal{Z}$ be a latent space, let $\mathcal{E}$ be a space of evidence
+bundles, and let $\mathsf{Formed} : \mathcal{E} \times \mathcal{Z} \to
+\mathsf{Prop}$ be a predicate expressing that latent $z$ is a well-formed
+summary of evidence $e$. A \emph{checked latent state} is a triple $(z,e,h)$.
 \end{definition}
 
-The conceptual gain is modest but important. A raw latent says, ``the model has
-produced this representation.'' A checked latent says, ``the model has produced
-this representation from this evidence, and the relevant formation conditions
-have been witnessed.'' For a reader less interested in symbols than in
-consequences, the difference is the difference between a hunch and a hunch that
-keeps its notebook open on the table.
+The conceptual gain is modest but important. A raw latent says, ``here is a
+point.'' A checked latent says, ``here is a point, and here is why it may be
+used.''
 
 To make that distinction operational, one wants a formation rule. JEPA gives a
 natural picture here: a latent is formed from a partial context together with an
@@ -291,32 +273,18 @@ the model, but emitted together with evidence that it is a properly formed
 summary for the predictive task determined by $(c,t)$.
 \end{definition}
 
-This is a compact way to formalize a common-sense planning rule: prediction may
-begin from partial context, but action should begin only from a partial context
-that has been certified as sufficient for the particular sort of prediction now
-being used. The formalism does not say how rich that sufficiency condition must
-be; it says only that the condition should be explicit enough to travel with the
-latent.
+This is the whole point of the gate: prediction may begin from partial context,
+but action begins only when the composition is admissible.
 
-Finally, one wants to say how several checked latents may be combined. This is
-where admissibility claims become more interesting than single-state sanity
-checks. In a realistic system, a planner rarely acts from one latent alone. It
-acts from several fragments of internal state, gathered across time or from
-several agents, and must know when those fragments jointly license a stronger
-claim.
+Now picture a second latent and a third. The question is no longer whether a
+single state is admissible, but whether a family of states can be glued into one
+larger state without breaking the boundary conditions.
 
-\begin{definition}[Latent Orbits and Compatibility]
-Let $\mathcal{G}$ act on $\mathcal{Z}$. For $z \in \mathcal{Z}$, write
-$[z] = \{g \cdot z : g \in \mathcal{G}\}$ for its orbit under reparameterization.
-Two checked latents are compatible when their evidence bundles agree on the
-overlap of their orbits, in the sense that $\mathsf{Compat}(e_1,e_2)$ holds.
-\end{definition}
-
-\begin{definition}[Latent Composition]
-Let $\star : \mathcal{Z} \times \mathcal{Z} \rightharpoonup \mathcal{Z}$ be a
-partial composition. If $z_1 \star z_2$ exists, it is the glued latent obtained
-by identifying the common part of $[z_1]$ and $[z_2]$ and transporting evidence
-along the resulting overlap.
+\begin{definition}[Latent Orbits and Composition]
+Let $\mathcal{G}$ act on $\mathcal{Z}$ and write $[z]$ for the orbit of $z$.
+Two checked latents are compatible when their evidence agrees on the overlap of
+their orbits. When the overlap is lawful, we write $z_1 \star z_2$ for the
+glued latent.
 \end{definition}
 
 \begin{proposition}[Compositional Admissibility Claims]
@@ -329,17 +297,14 @@ carries a witness
 \]
 \end{proposition}
 
-The point of the proposition is not algebraic flourish. It is to insist that
-when several latent fragments are merged, the right object of trust is the joined
-evidence-latent pair. A downstream planner should not inherit a stronger claim
-merely because it has access to more vectors. It should inherit only those claims
-supported by a lawful composition of the evidence behind them.
+The point is simple: more coordinates do not automatically mean more authority.
+Only a lawful composition of compatible pieces earns a stronger claim.
 
 \subsection{Typed Next-Action Families}
 
-The same structure lets us talk about action in a more disciplined way. If the
-latent space is an atlas of partial views, then a next action is not simply a
-command chosen from a list. It is a term typed by the view that authorizes it.
+The same structure lets us talk about action in a disciplined way. If the latent
+space is an atlas of partial views, then a next action is not a free-standing
+command. It is a term typed by the view that authorizes it.
 
 \begin{definition}[Typed Next Action]
 Let $\mathsf{Next} : \mathcal{Z} \times \mathsf{Prop} \to \mathsf{Type}$ be a
@@ -350,8 +315,7 @@ $a : \mathsf{Next}(z,h)$.
 
 In this reading, dependent types do not police the future; they shape it. A plan
 becomes a witness that the next step is licensed by the latent state from which
-it arose. That is the point at which a representational space becomes more than a
-memory: it becomes a grammar for permissible motion.
+it arose.
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{From Partial Views to Planning Contracts}
@@ -385,14 +349,11 @@ where autonomous systems must choose under ambiguity. A planner that cannot prov
 enough should return an abstention, a request for more context, or a lower-risk
 fallback policy. Typed construction gives these behaviors first-class status.
 
-\subsection{A Collaborative Research Loop}
+\subsection{A Collaborative Visualization}
 
-Figure~\ref{fig:global-jepa-loop} sketches the intended workflow. Distributed
-research groups contribute partial-view datasets, local obligations, and
-refinement lemmas. Shared checks keep only artifacts that satisfy the agreed
-contracts. JEPA-style training then updates representations on this filtered
-corpus, and the next iteration tightens both statistical quality and formal
-clarity.
+Figure~\ref{fig:latent-decision} is the picture behind the paper: many local
+latent pieces are checked together, glued into one state, and then gated into an
+admissible decision.
 
 \begin{figure}[t]
 \centering
@@ -400,44 +361,33 @@ clarity.
 \begin{minipage}{0.92\linewidth}
 \centering
 \small
-\textbf{Global Collaboration Loop: Typed Publication to JEPA Update}\\[0.6em]
+\textbf{Latent Coordinates $\to$ Admissible Decision}\\[0.6em]
 \begin{tabular}{c}
-Iteration $k$ \\
-\fbox{\parbox{0.84\linewidth}{\centering
-Teams publish $(\text{partial views},\, \text{local proofs},\, \text{context-target pairs})_k$
-}} \\
+$(z_1, z_2, \dots, z_n)$ \\
 $\Downarrow$ \\
-\fbox{\parbox{0.84\linewidth}{\centering
-Common admissibility checker: keep only contract-satisfying artifacts
-}} \\
+compatibility on overlaps $\mathsf{Compat}(e_i,e_j)$ \\
 $\Downarrow$ \\
-\fbox{\parbox{0.84\linewidth}{\centering
-JEPA update on filtered corpus: $E_k \mapsto E_{k+1}$
-}} \\
+glued state $z^{\star} = z_1 \star z_2 \star \cdots \star z_n$ \\
 $\Downarrow$ \\
-\fbox{\parbox{0.84\linewidth}{\centering
-Publish stronger obligations and refinement lemmas for iteration $k+1$
-}}
+admissibility witness $\mathsf{Adm}(z^{\star})$ \\
+$\Downarrow$ \\
+next action $a : \mathsf{Next}(z^{\star},\mathsf{Adm}(z^{\star}))$
 \end{tabular}
 \end{minipage}%
 }
-\caption{Indicative training-governance cycle. Representation quality improves
-statistically while admissibility guarantees improve constructively.}
-\label{fig:global-jepa-loop}
+\caption{A compact picture of the paper's claim: a decision should follow only
+after many latent coordinates have been composed into an admissible whole.}
+\label{fig:latent-decision}
 \end{figure}
 
 \subsection{Immediate Alignment Value in Multi-Agent Settings}
 
-The safety advantage of this bridge is concrete. In multi-agent environments,
-failures often arise not from a single bad prediction but from a mismatch between
-what one agent inferred and what another agent was entitled to do. Typed world
-model interfaces make these mismatches visible at construction time. Provenance,
-permission scope, and uncertainty regime can all be made part of the data that
-planning consumes.
+The safety advantage is concrete. In multi-agent environments, failures often
+arise not from one bad prediction but from a mismatch between pieces. Typed
+composition makes that mismatch visible before action.
 
-The resulting architecture remains learned and adaptive, but it becomes less
-willing to improvise beyond its evidence. That is precisely the behavior we want
-from autonomous systems that must act among other autonomous systems.
+The result is still learned and adaptive, but it is less willing to improvise
+beyond its evidence.
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{Illustrative Rocq Formalizations}
