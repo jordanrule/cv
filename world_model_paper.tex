@@ -30,6 +30,7 @@
 \definecolor{rocqblue}{RGB}{0,80,160}
 \definecolor{rocqgray}{RGB}{100,100,100}
 \definecolor{rocqgreen}{RGB}{0,120,60}
+\definecolor{line}{RGB}{39,35,31}
 \definecolor{panelbg}{RGB}{236,244,234}
 
 \lstdefinelanguage{Rocq}{
@@ -48,7 +49,9 @@
   language=Rocq,
   basicstyle=\ttfamily\small,
   frame=single,
-  rulecolor=\color{rocqblue},
+  rulecolor=\color{line},
+  framerule=0.9pt,
+  framesep=0.75em,
   backgroundcolor=\color{panelbg},
   columns=fullflexible,
   keepspaces=true,
@@ -351,9 +354,9 @@ fallback policy. Typed construction gives these behaviors first-class status.
 
 \subsection{A Collaborative Visualization}
 
-Figure~\ref{fig:latent-decision} is the picture behind the paper: many local
-latent pieces are checked together, glued into one state, and then gated into an
-admissible decision.
+Figure~\ref{fig:latent-decision} is the picture behind the paper: the latent
+space is a product of coordinates, the join is an intersection of compatible
+slices, and admissibility is the witness that the intersection is safe to act on.
 
 \begin{figure}[t]
 \centering
@@ -361,22 +364,32 @@ admissible decision.
 \begin{minipage}{0.92\linewidth}
 \centering
 \small
-\textbf{Latent Coordinates $\to$ Admissible Decision}\\[0.6em]
-\begin{tabular}{c}
-$(z_1, z_2, \dots, z_n)$ \\
-$\Downarrow$ \\
-compatibility on overlaps $\mathsf{Compat}(e_i,e_j)$ \\
-$\Downarrow$ \\
-glued state $z^{\star} = z_1 \star z_2 \star \cdots \star z_n$ \\
-$\Downarrow$ \\
-admissibility witness $\mathsf{Adm}(z^{\star})$ \\
-$\Downarrow$ \\
-next action $a : \mathsf{Next}(z^{\star},\mathsf{Adm}(z^{\star}))$
-\end{tabular}
+\textbf{Join in $n$-Dimensional Latent Space}\\[0.6em]
+\[
+  \mathcal{Z} = Z_1 \times Z_2 \times \cdots \times Z_n
+  \qquad
+  z = (z_1, z_2, \ldots, z_n)
+\]
+\[
+  \mathcal{S}_i = \{ z \in \mathcal{Z} : \mathsf{Formed}(e_i,z_i) \}
+  \qquad
+  \mathcal{J} = \bigcap_{i=1}^{m} \pi_i^{-1}(\mathcal{S}_i)
+\]
+\[
+  z^{\star} \in \mathcal{J}
+  \qquad\Longrightarrow\qquad
+  \mathsf{Adm}(z^{\star})
+  \qquad\Longrightarrow\qquad
+  a \in \mathsf{Next}(z^{\star},\mathsf{Adm}(z^{\star}))
+\]
+\[
+  \mathcal{A} = \{ z^{\star} \in \mathcal{J} : \mathsf{Adm}(z^{\star}) \}
+\]
 \end{minipage}%
 }
-\caption{A compact picture of the paper's claim: a decision should follow only
-after many latent coordinates have been composed into an admissible whole.}
+\caption{A compact picture of the paper's claim: an admissible decision arises
+only after many latent coordinates are joined into a compatible region of the
+full latent space.}
 \label{fig:latent-decision}
 \end{figure}
 
