@@ -79,9 +79,9 @@
 \begin{abstract}
 A learned world model can be pictured as a latent geometry: many partial
 coordinates, a rule for gluing them, and a gate that turns the glued state into
-an admissible decision. This paper sketches that picture in dependent types,
-where evidence travels with state and action only follows from a state that has
-been composed lawfully.
+an admissible decision. This paper proposes that dependent types are a serious
+way to raise the formal precision of world models, because they let evidence
+travel with state and make action depend on lawful composition.
 \end{abstract}
 
 \section{Introduction}
@@ -92,13 +92,15 @@ what is remembered. The interesting question is not whether the cloud is tidy,
 but whether its pieces can be assembled into a state that still supports a safe
 decision.
 
-Dependent type theory gives that picture a small but important discipline. A
-state may carry the evidence that justifies it, and an action may be typed by the
-state that authorizes it. Rocq gives us a concrete language for this discipline.
+Dependent type theory gives that picture real discipline. A state may carry the
+evidence that justifies it, and an action may be typed by the state that
+authorizes it. Rocq gives us a concrete language for this line of research.
 
 The thread of the paper is simple: compose many partial latent states, demand
 compatibility on overlaps, and only then interpret a next action. The math is
-deliberately light, but the structure matters.
+kept compact, but the claim is ambitious: this is a promising path for making
+world models more explicit about what they know, what they can combine, and what
+they are entitled to do next.
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{Background}
