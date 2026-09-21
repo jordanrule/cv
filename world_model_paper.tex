@@ -352,6 +352,91 @@ The key property is psychological as well as technical. One is no longer asked
 to trust that a state has been blessed somewhere upstream. The blessing is part
 of the object. Construction and certification occur together, or not at all.
 
+For world models, however, it helps to say a little more. Not every state is a
+state in the same sense. There is usually first a \emph{raw latent}: the learned
+representation proposed by an encoder or predictor. Only afterward comes the
+question of whether that latent is fit for use in planning. We therefore
+distinguish between latent vectors as mere numerical summaries and checked
+latents as latent summaries that carry explicit evidence about how they were
+formed.
+
+\begin{definition}[Raw and Checked Latent State]
+Let $Z$ be a latent space, let $E$ be a space of evidence bundles, and let
+$\mathsf{Formed} : E \times Z \to \mathsf{Prop}$ be a predicate expressing that
+latent $z$ is a well-formed summary of evidence $e$. A \emph{checked latent
+state} is a triple $(z,e,h)$ where $z \in Z$, $e \in E$, and
+$h : \mathsf{Formed}(e,z)$.
+\end{definition}
+
+The conceptual gain is modest but important. A raw latent says, ``the model has
+produced this representation.'' A checked latent says, ``the model has produced
+this representation from this evidence, and the relevant formation conditions
+have been witnessed.'' For a reader less interested in symbols than in
+consequences, the difference is the difference between a hunch and a hunch that
+keeps its notebook open on the table.
+
+To make that distinction operational, one wants a formation rule. JEPA gives a
+natural picture here: a latent is formed from a partial context together with an
+intended predictive task. In a typed setting, one can insist that not every such
+pair is admissible. Some contexts are too thin, some fragments conflict, and
+some compositions overstep the scope under which the evidence was gathered.
+
+\begin{definition}[Checked Latent Formation]
+Let $C$ be a space of contexts, $T$ a space of target views, and let
+$\mathsf{ev} : C \times T \to E$ package the evidence extracted from a
+context-target pair. Let $\mathsf{enc} : C \to Z$ be a latent-forming map. A
+checked latent formation judgment is written
+\[
+  (c,t) \Downarrow (z,e,h)
+\]
+when $z = \mathsf{enc}(c)$, $e = \mathsf{ev}(c,t)$, and
+$h : \mathsf{Formed}(e,z)$. In words: the latent $z$ is not merely emitted by
+the model, but emitted together with evidence that it is a properly formed
+summary for the predictive task determined by $(c,t)$.
+\end{definition}
+
+This is a compact way to formalize a common-sense planning rule: prediction may
+begin from partial context, but action should begin only from a partial context
+that has been certified as sufficient for the particular sort of prediction now
+being used. The formalism does not say how rich that sufficiency condition must
+be; it says only that the condition should be explicit enough to travel with the
+latent.
+
+Finally, one wants to say how several checked latents may be combined. This is
+where admissibility claims become more interesting than single-state sanity
+checks. In a realistic system, a planner rarely acts from one latent alone. It
+acts from several fragments of internal state, gathered across time or from
+several agents, and must know when those fragments jointly license a stronger
+claim.
+
+\begin{proposition}[Compositional Admissibility Claims]
+Let $\mathsf{Compat} : E \times E \to \mathsf{Prop}$ express evidence
+compatibility, let $\oplus_Z : Z \times Z \to Z$ combine latent summaries, and
+let $\oplus_E : E \times E \to E$ combine evidence bundles. Suppose further
+that admissibility claims are represented by a predicate
+$\mathsf{Claim} : E \times Z \to \mathsf{Prop}$. If
+\[
+  h_1 : \mathsf{Formed}(e_1,z_1), \qquad
+  h_2 : \mathsf{Formed}(e_2,z_2), \qquad
+  k : \mathsf{Compat}(e_1,e_2),
+\]
+then a composite checked latent may be formed as
+\[
+  (z_1,e_1,h_1) \otimes (z_2,e_2,h_2)
+  = (z_1 \oplus_Z z_2,\, e_1 \oplus_E e_2,\, h_{12}),
+\]
+for some witness
+$h_{12} : \mathsf{Formed}(e_1 \oplus_E e_2,\, z_1 \oplus_Z z_2)$, and any
+admissibility claim must be stated over the composite pair
+$(e_1 \oplus_E e_2, z_1 \oplus_Z z_2)$ rather than over the latent alone.
+\end{proposition}
+
+The point of the proposition is not algebraic flourish. It is to insist that
+when several latent fragments are merged, the right object of trust is the
+joined evidence-latent pair. A downstream planner should not inherit a stronger
+claim merely because it has access to more vectors. It should inherit only those
+claims supported by a lawful composition of the evidence behind them.
+
 \subsection{Proof-Carrying World Model Interface}
 
 A world model operating over proof-carrying states must be designed so that:
