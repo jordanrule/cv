@@ -305,76 +305,53 @@ acts from several fragments of internal state, gathered across time or from
 several agents, and must know when those fragments jointly license a stronger
 claim.
 
+\begin{definition}[Latent Orbits and Compatibility]
+Let $\mathcal{G}$ act on $\mathcal{Z}$. For $z \in \mathcal{Z}$, write
+$[z] = \{g \cdot z : g \in \mathcal{G}\}$ for its orbit under reparameterization.
+Two checked latents are compatible when their evidence bundles agree on the
+overlap of their orbits, in the sense that $\mathsf{Compat}(e_1,e_2)$ holds.
+\end{definition}
+
+\begin{definition}[Latent Composition]
+Let $\star : \mathcal{Z} \times \mathcal{Z} \rightharpoonup \mathcal{Z}$ be a
+partial composition. If $z_1 \star z_2$ exists, it is the glued latent obtained
+by identifying the common part of $[z_1]$ and $[z_2]$ and transporting evidence
+along the resulting overlap.
+\end{definition}
+
 \begin{proposition}[Compositional Admissibility Claims]
-Let $\mathsf{Compat} : E \times E \to \mathsf{Prop}$ express evidence
-compatibility, let $\oplus_Z : Z \times Z \to Z$ combine latent summaries, and
-let $\oplus_E : E \times E \to E$ combine evidence bundles. Suppose further
-that admissibility claims are represented by a predicate
-$\mathsf{Claim} : E \times Z \to \mathsf{Prop}$. If
+Suppose $z_1,z_2 \in \mathcal{Z}$ are checked latents with witnesses
+$h_1 : \mathsf{Formed}(e_1,z_1)$ and $h_2 : \mathsf{Formed}(e_2,z_2)$.
+If $\mathsf{Compat}(e_1,e_2)$ and $z_1 \star z_2$ exists, then the composite
+carries a witness
 \[
-  h_1 : \mathsf{Formed}(e_1,z_1), \qquad
-  h_2 : \mathsf{Formed}(e_2,z_2), \qquad
-  k : \mathsf{Compat}(e_1,e_2),
+  h_{12} : \mathsf{Formed}(e_1 \oplus_E e_2,\, z_1 \star z_2).
 \]
-then a composite checked latent may be formed as
-\[
-  (z_1,e_1,h_1) \otimes (z_2,e_2,h_2)
-  = (z_1 \oplus_Z z_2,\, e_1 \oplus_E e_2,\, h_{12}),
-\]
-for some witness
-$h_{12} : \mathsf{Formed}(e_1 \oplus_E e_2,\, z_1 \oplus_Z z_2)$, and any
-admissibility claim must be stated over the composite pair
-$(e_1 \oplus_E e_2, z_1 \oplus_Z z_2)$ rather than over the latent alone.
 \end{proposition}
 
 The point of the proposition is not algebraic flourish. It is to insist that
-when several latent fragments are merged, the right object of trust is the
-joined evidence-latent pair. A downstream planner should not inherit a stronger
-claim merely because it has access to more vectors. It should inherit only those
-claims supported by a lawful composition of the evidence behind them.
+when several latent fragments are merged, the right object of trust is the joined
+evidence-latent pair. A downstream planner should not inherit a stronger claim
+merely because it has access to more vectors. It should inherit only those claims
+supported by a lawful composition of the evidence behind them.
 
-\subsection{Proof-Carrying World Model Interface}
+\subsection{Typed Next-Action Families}
 
-A world model operating over proof-carrying states must be designed so that:
-\begin{enumerate}
-  \item \emph{Observation closure}: applying the observation operator to an
-    admissible state produces an admissible state.
-  \item \emph{Imagination validity}: applying the imagination (rollout)
-    operator to an admissible state produces a valid (non-undefined) state.
-\end{enumerate}
+The same structure lets us talk about action in a more disciplined way. If the
+latent space is an atlas of partial views, then a next action is not simply a
+command chosen from a list. It is a term typed by the view that authorizes it.
 
-These are not runtime checks but proof obligations discharged at definition
-time. A world model that cannot satisfy them is, in a precise sense,
-\emph{ill-typed}—it cannot be instantiated.
+\begin{definition}[Typed Next Action]
+Let $\mathsf{Next} : \mathcal{Z} \times \mathsf{Prop} \to \mathsf{Type}$ be a
+family assigning to each admissible latent state the type of actions it may
+authorize. If $h : \mathsf{Adm}(z)$, then a next action is a term
+$a : \mathsf{Next}(z,h)$.
+\end{definition}
 
-The following Rocq sketch captures the interface:
-
-\begin{lstlisting}[caption={Proof-carrying world model interface in Rocq},
-                   label={lst:world-interface}]
-From mathcomp Require Import ssreflect ssrbool ssrnat seq.
-
-Section TypedWorld.
-Context {State Observation Action : Type}.
-Context (Adm : State -> Prop).
-
-Record CheckedState := {
-  state_val : State;
-  state_ok  : Adm state_val
-}.
-
-Record WorldModel := {
-  observe : CheckedState -> seq Observation -> CheckedState;
-  imagine : CheckedState -> seq Action -> option CheckedState
-}.
-
-End TypedWorld.
-\end{lstlisting}
-
-This interface is intentionally schematic. The key point is that planning-time
-outputs are partial (\texttt{option}) and must justify admissibility on success.
-A JEPA-style model can be read through the same lens: context builds a latent
-state, prediction proposes a target representation, and typed obligations specify
-when that representation is safe to use for downstream planning.
+In this reading, dependent types do not police the future; they shape it. A plan
+becomes a witness that the next step is licensed by the latent state from which
+it arose. That is the point at which a representational space becomes more than a
+memory: it becomes a grammar for permissible motion.
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{From Partial Views to Planning Contracts}
@@ -469,24 +446,23 @@ from autonomous systems that must act among other autonomous systems.
 
 \subsection{A Tiny Example of Proof-Carrying State}
 
-Before introducing additional interface structure, we illustrate the simplest instance of
-proof-carrying state: a rollout record whose \texttt{horizon} field is
-certified by a length witness.
+Before introducing anything more ambitious, it helps to see the smallest
+possible case: a checked state whose horizon is certified by a witness.
 
-\begin{lstlisting}[caption={Minimal proof-carrying rollout record},
+\begin{lstlisting}[caption={A minimal checked state in Rocq},
                    label={lst:minimal}]
 From Coq Require Import List Arith.
 Import ListNotations.
 
 Record CheckedRollout := {
-  horizon         : nat;
-  actions         : list nat;
+  horizon : nat;
+  actions : list nat;
   horizon_matches : length actions = horizon
 }.
 
 Definition single_action (a : nat) : CheckedRollout :=
-  {| horizon         := 1;
-     actions         := [a];
+  {| horizon := 1;
+     actions := [a];
      horizon_matches := eq_refl |}.
 \end{lstlisting}
 
@@ -498,91 +474,28 @@ attempt would produce a type error. This is the paper's basic promise in
 miniature: if a state claims to summarize a horizon, that claim can be made
 part of the object rather than an informal comment about it.
 
-\subsection{Typed Context-Target Prediction}
+\subsection{Typed Next-Action Sketch}
 
-The following Rocq definition illustrates a proof-carrying context-target
-prediction pair. The key point is that the prediction is only usable when the
-context is known to be non-empty.
+The second sketch makes the dependence on the latent state explicit. A planner
+does not emit an action in the abstract; it emits an action licensed by the
+state and by the witness that the state is admissible.
 
-\begin{lstlisting}[caption={Typed context-target prediction record},
-                   label={lst:rollout}]
-From Coq Require Import List Arith.
-Import ListNotations.
+\begin{lstlisting}[caption={A dependent next-action family in Rocq},
+                   label={lst:next-action}]
+Section NextAction.
+  Variable State Action : Type.
+  Variable Adm : State -> Prop.
+  Variable Next : State -> Type.
 
-Record PredictivePair := {
-  context_tokens : list nat;
-  target_tokens  : list nat;
-  context_nonempty : length context_tokens > 0
-}.
-
-Definition safe_predict (p : PredictivePair) : option (list nat) :=
-  if Nat.eqb (length (context_tokens p)) 0
-  then None
-  else Some (target_tokens p).
+  Record Planner := {
+    propose : forall s, Adm s -> Next s
+  }.
+End NextAction.
 \end{lstlisting}
 
-The \texttt{safe\_predict} function is deliberately modest: prediction is allowed
-only when the context witness says there is actually context to condition on. The
-point is not sophistication but shape. Even this tiny example reflects the design
-rule that planning-time prediction should expose admissibility directly.
-
-\subsection{Evidence-Scoped Action Proposals}
-
-A second pattern is to type action proposals by the evidence they require. Rather
-than ``choose action,'' one defines ``choose action under evidence profile $e$.''
-When the profile is weak, the system can still reason, but only into action
-families allowed for weak evidence.
-
-\begin{lstlisting}[caption={Evidence-scoped action proposal},
-                   label={lst:sensor}]
-From Coq Require Import List Arith.
-
-Inductive RiskLevel := Low | High.
-
-Record Evidence := {
-  confidence : nat;
-  confidence_ok : confidence <= 100
-}.
-
-Definition can_take_high_risk (e : Evidence) : bool :=
-  Nat.leb 80 (confidence e).
-
-Definition propose_action (e : Evidence) : RiskLevel :=
-  if can_take_high_risk e then High else Low.
-\end{lstlisting}
-
-The program is simple, but the design lesson is durable: evidence quality becomes
-an explicit input to action construction. In richer systems, those thresholds are
-replaced by proofs over learned uncertainty estimates and provenance contracts.
-
-\subsection{Composing Multi-Agent Signals with Explicit Trust}
-
-The final pattern is trust-aware composition. In cooperative and adversarial
-settings alike, a planner must know not only \emph{what} was observed, but
-\emph{who observed it} and under what trust assumptions.
-
-\begin{lstlisting}[caption={Trust-annotated observation packet},
-                   label={lst:compose}]
-From Coq Require Import List Arith.
-
-Inductive Trust := Unverified | Verified.
-
-Record Observation := {
-  payload : nat;
-  trust   : Trust
-}.
-
-Definition usable_for_critical_plan (o : Observation) : bool :=
-  match trust o with
-  | Verified => true
-  | Unverified => false
-  end.
-\end{lstlisting}
-
-This sketch captures the core operational idea: critical planning paths should be
-typed to require stronger evidence than exploratory paths. The architecture can
-still learn from all signals, but it need not treat all signals as equally
-authoritative at decision time.
+The point is not to build a full planning stack in a few lines. It is to show the
+shape of the interface: the next action is indexed by the state that authorizes
+it, so the latent space and the policy are never fully separable.
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{Discussion and Research Directions}
