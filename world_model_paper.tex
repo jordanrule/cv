@@ -19,6 +19,8 @@
 \usepackage{natbib}
 \usepackage{abstract}
 \usepackage{titlesec}
+\usepackage{tikz}
+\usepackage{graphicx}
 
 % ---- typography ----
 \titleformat{\section}{\large\bfseries}{\thesection.}{0.6em}{}
@@ -86,21 +88,79 @@ travel with state and make action depend on lawful composition.
 
 \section{Introduction}
 
-One can picture a world model as a cloud of coordinates rather than a single
-point. One coordinate records what is seen, another what is inferred, another
-what is remembered. The interesting question is not whether the cloud is tidy,
-but whether its pieces can be assembled into a state that still supports a safe
-decision.
+This paper proposes a framework for world models in which a decision arises only
+after composing many partial latent states and verifying their compatibility. We
+visualize the latent space as an $n$-dimensional product $\mathcal{Z} = Z_1
+\times Z_2 \times \cdots \times Z_n$, where each coordinate captures a different
+view of the situation: perception, memory, inference, or constraint. A decision
+is admissible only when a subset of these coordinates can be lawfully joined.
 
-Dependent type theory gives that picture real discipline. A state may carry the
-evidence that justifies it, and an action may be typed by the state that
-authorizes it. Rocq gives us a concrete language for this line of research.
+Formally, let $\mathsf{Formed}(e_i, z_i)$ assert that coordinate $i$ is correctly
+formed from evidence $e_i$. The set of admissible states is the intersection
+\[
+  \mathcal{A} = \left\{ z \in \mathcal{Z} : \mathsf{Adm}(z) \Leftrightarrow
+  \exists e_1, \ldots, e_m. \; \bigcap_{i=1}^{m} \mathsf{Formed}(e_i, z_i)
+  \right\}
+\]
 
-The thread of the paper is simple: compose many partial latent states, demand
-compatibility on overlaps, and only then interpret a next action. The math is
-kept compact, but the claim is ambitious: this is a promising path for making
-world models more explicit about what they know, what they can combine, and what
-they are entitled to do next.
+A next action is typed by membership in $\mathcal{A}$:
+\[
+  a : \mathsf{Next}(z, \mathsf{Adm}(z))
+  \quad \text{only if} \quad
+  z \in \mathcal{A}.
+\]
+
+This structure has three properties. First, it makes admissibility a composite
+judgment: a state earns its authority by aligning many sources of evidence.
+Second, it prevents action from orphaned latent fragments. Third, it offers
+dependent types a concrete role: as a way to encode this alignment requirement
+into the type of an action itself, ensuring that the policy cannot be
+constructed without the precondition.
+
+Figure~\ref{fig:latent-decision} presents this picture in three dimensions. The
+proposal is that this structure transfers naturally to Rocq, where such
+constraints can be formally verified and preserved during learning.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[scale=1.2, line cap=round, line join=round]
+  % Draw the 3D coordinate system
+  \draw[thick, ->] (0,0,0) -- (3,0,0) node[right] {$Z_1$};
+  \draw[thick, ->] (0,0,0) -- (0,3,0) node[above] {$Z_2$};
+  \draw[thick, ->] (0,0,0) -- (0,0,3) node[right] {$Z_3$};
+
+  % Draw three partial slices
+  % Slice for $\mathsf{Formed}(e_1, z_1)$
+  \draw[blue, thick, opacity=0.4] (2,-0.5,0) -- (2,3.5,0) -- (2,3.5,3) -- (2,-0.5,3) -- cycle;
+  \node[blue, opacity=0.6] at (2.3, 1.5, 1.5) {\small $\mathcal{S}_1$};
+
+  % Slice for $\mathsf{Formed}(e_2, z_2)$
+  \draw[green, thick, opacity=0.4] (-0.5,2,0) -- (3.5,2,0) -- (3.5,2,3) -- (-0.5,2,3) -- cycle;
+  \node[green, opacity=0.6] at (1.5, 2.3, 1.5) {\small $\mathcal{S}_2$};
+
+  % Slice for $\mathsf{Formed}(e_3, z_3)$
+  \draw[red, thick, opacity=0.4] (-0.5,-0.5,1.2) -- (3.5,-0.5,1.2) -- (3.5,3.5,1.2) -- (-0.5,3.5,1.2) -- cycle;
+  \node[red, opacity=0.6] at (1.5, 0.5, 1.5) {\small $\mathcal{S}_3$};
+
+  % Intersection region (admissible region)
+  \draw[black, very thick, dashed] (2, 2, 1.2) -- (2, 2, 1.2) circle (0.15);
+  \filldraw[black, radius=0.15] (2, 2, 1.2) circle;
+  \node[black, above right] at (2.3, 2.3, 1.3) {$z^{\star} \in \mathcal{A}$};
+
+  % Box around intersection hint
+  \draw[black, very thin, opacity=0.3] (1.8, 1.8, 1) -- (2.2, 1.8, 1) -- (2.2, 2.2, 1) -- (1.8, 2.2, 1) -- cycle;
+  \draw[black, very thin, opacity=0.3] (1.8, 1.8, 1.4) -- (2.2, 1.8, 1.4) -- (2.2, 2.2, 1.4) -- (1.8, 2.2, 1.4) -- cycle;
+  \draw[black, very thin, opacity=0.3] (1.8, 1.8, 1) -- (1.8, 1.8, 1.4);
+  \draw[black, very thin, opacity=0.3] (2.2, 1.8, 1) -- (2.2, 1.8, 1.4);
+  \draw[black, very thin, opacity=0.3] (2.2, 2.2, 1) -- (2.2, 2.2, 1.4);
+  \draw[black, very thin, opacity=0.3] (1.8, 2.2, 1) -- (1.8, 2.2, 1.4);
+\end{tikzpicture}
+\caption{Three partial latent coordinates intersect at $z^{\star}$, which lies
+in the admissible region $\mathcal{A}$. Each slice $\mathcal{S}_i$ represents
+states satisfying $\mathsf{Formed}(e_i, z_i)$ for evidence $e_i$. Only their
+intersection is authorized to generate a next action.}
+\label{fig:latent-decision}
+\end{figure}
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{Background}
@@ -179,25 +239,19 @@ constructive formalization in Rocq and practical proof engineering at scale.
 
 \subsection{Partial Views, Predictive Sufficiency, and Contracts}
 
-Before the formalities, it helps to draw the shape of the claim. Let
-$z = (z_1,\dots,z_n)$ be a multi-dimensional latent state, where each coordinate
-captures a different view of the same situation: perception, memory, context,
-or constraint. The state is admissible only when its coordinates agree enough to
-be read together.
+The core structure is a directed pipeline from partial states to admissible
+decisions. Let $\mathcal{Z} = (Z_1, Z_2, \ldots, Z_n)$ be an $n$-dimensional
+latent space. For each dimension $i$, a witness function $h_i : \mathsf{Formed}(e_i,
+z_i)$ asserts that coordinate $z_i$ is a valid summary of evidence $e_i$.
 
+The compositional rule is: if $h_1, \ldots, h_m$ are witnesses for a subset of
+coordinates, and their evidence $e_1, \ldots, e_m$ satisfies $\mathsf{Compat}(e_i,
+e_j)$ for all $i, j$ in the subset, then the product
 \[
-  z = (z_1,\dots,z_n)
-  \quad\longrightarrow\quad
-  \mathsf{Compat}(z_i,z_j)
-  \quad\longrightarrow\quad
-  z^{\star}
-  \quad\longrightarrow\quad
-  a : \mathsf{Next}(z^{\star},\mathsf{Adm}(z^{\star}))
+  z^{\star} = (z_1, \ldots, z_m, \bot, \ldots, \bot)
 \]
-
-This is the whole story in miniature. We do not ask a single latent point to do
-all the work. We ask many partial states to align, and then we allow the next
-action only from the aligned result. That is the safety move.
+is admissible and can authorize action. The point is that not all latent states
+are action-worthy; only those composed from compatible evidence carry authority.
 
 \subsection{From JEPA Representations to Typed Planning}
 
@@ -229,98 +283,83 @@ made from the pieces that formed it.
 
 \subsection{Proof-Carrying State}
 
-We define a \emph{proof-carrying state} as a latent state together with the
-witness that it is admissible.
+A proof-carrying state is a pair $(z, h)$ where $z \in \mathcal{Z}$ and
+$h : \mathsf{Adm}(z)$. The proof term $h$ is not a comment; it is part of the
+object. Construction and certification are inseparable.
 
 \begin{definition}[Proof-Carrying State]
-Let $\mathcal{Z}$ be a set of representational states and let
-$\mathsf{Adm} : \mathcal{Z} \to \mathsf{Prop}$ be an admissibility predicate.
-A \emph{proof-carrying state} is a pair $(z, h)$ where $z \in \mathcal{Z}$ and
-$h : \mathsf{Adm}(z)$.
+Let $\mathcal{Z}$ be a set of latent states and $\mathsf{Adm} : \mathcal{Z} \to
+\mathsf{Prop}$. A proof-carrying state is a dependent pair $(z, h)$ where
+$z : \mathcal{Z}$ and $h : \mathsf{Adm}(z)$.
 \end{definition}
 
-The key property is psychological as well as technical. One is no longer asked
-to trust that a state has been blessed somewhere upstream. The blessing is part
-of the object. Construction and certification occur together, or not at all.
-
-For world models, there is usually first a raw latent: a representation proposed
-by perception or prediction. Only later do we ask whether it is fit for action.
-That second step is where the type lives.
-
-\begin{definition}[Raw and Checked Latent State]
-Let $\mathcal{Z}$ be a latent space, let $\mathcal{E}$ be a space of evidence
-bundles, and let $\mathsf{Formed} : \mathcal{E} \times \mathcal{Z} \to
-\mathsf{Prop}$ be a predicate expressing that latent $z$ is a well-formed
-summary of evidence $e$. A \emph{checked latent state} is a triple $(z,e,h)$.
-\end{definition}
-
-The conceptual gain is modest but important. A raw latent says, ``here is a
-point.'' A checked latent says, ``here is a point, and here is why it may be
-used.''
-
-To make that distinction operational, one wants a formation rule. JEPA gives a
-natural picture here: a latent is formed from a partial context together with an
-intended predictive task. In a typed setting, one can insist that not every such
-pair is admissible. Some contexts are too thin, some fragments conflict, and
-some compositions overstep the scope under which the evidence was gathered.
-
-\begin{definition}[Checked Latent Formation]
-Let $C$ be a space of contexts, $T$ a space of target views, and let
-$\mathsf{ev} : C \times T \to E$ package the evidence extracted from a
-context-target pair. Let $\mathsf{enc} : C \to Z$ be a latent-forming map. A
-checked latent formation judgment is written
+Formally, the type of all proof-carrying states is
 \[
-  (c,t) \Downarrow (z,e,h)
+  \Sigma_{z : \mathcal{Z}} \mathsf{Adm}(z) = \{ (z, h) : z \in \mathcal{Z},\
+  h : \mathsf{Adm}(z) \}.
 \]
-when $z = \mathsf{enc}(c)$, $e = \mathsf{ev}(c,t)$, and
-$h : \mathsf{Formed}(e,z)$. In words: the latent $z$ is not merely emitted by
-the model, but emitted together with evidence that it is a properly formed
-summary for the predictive task determined by $(c,t)$.
+
+For world models, there is usually a raw latent $z_0$ proposed by perception or
+prediction, followed by a check step that produces a witness $h : \mathsf{Adm}(z_0)$
+or fails. Only after that check does the latent become eligible for planning.
+
+\begin{definition}[Raw and Checked Latent]
+Let $\mathcal{Z}$ be a latent space, $\mathcal{E}$ a space of evidence, and
+$\mathsf{Formed} : \mathcal{E} \times \mathcal{Z} \to \mathsf{Prop}$. A checked
+latent is a triple $(z, e, h)$ where $z : \mathcal{Z}$, $e : \mathcal{E}$, and
+$h : \mathsf{Formed}(e, z)$.
 \end{definition}
 
-This is the whole point of the gate: prediction may begin from partial context,
-but action begins only when the composition is admissible.
+The distinction matters operationally. A raw latent says, ``here is a candidate
+state.'' A checked latent says, ``here is a state, here is the evidence, and
+here is the proof that the state correctly summarizes that evidence.'' The proof
+is the authorization to use the state in planning.
 
-Now picture a second latent and a third. The question is no longer whether a
-single state is admissible, but whether a family of states can be glued into one
-larger state without breaking the boundary conditions.
+In a JEPA setting, a latent $z$ is formed from a context-target pair $(c, t)$
+via an encoder $\mathsf{enc} : C \to Z$. Evidence $e$ is the structured record
+of what the context contained and what was predicted. The formation judgment
+$(c, t) \Downarrow (z, e, h)$ holds when $z = \mathsf{enc}(c)$ and
+$h : \mathsf{Formed}(e, z)$. The witness $h$ certifies that the latent is a
+faithful encoding of the evidence available in $(c, t)$.
 
-\begin{definition}[Latent Orbits and Composition]
-Let $\mathcal{G}$ act on $\mathcal{Z}$ and write $[z]$ for the orbit of $z$.
-Two checked latents are compatible when their evidence agrees on the overlap of
-their orbits. When the overlap is lawful, we write $z_1 \star z_2$ for the
-glued latent.
-\end{definition}
-
-\begin{proposition}[Compositional Admissibility Claims]
-Suppose $z_1,z_2 \in \mathcal{Z}$ are checked latents with witnesses
-$h_1 : \mathsf{Formed}(e_1,z_1)$ and $h_2 : \mathsf{Formed}(e_2,z_2)$.
-If $\mathsf{Compat}(e_1,e_2)$ and $z_1 \star z_2$ exists, then the composite
-carries a witness
+\begin{proposition}[Formation Under Evidence Constraints]
+Suppose $(c_1, t_1) \Downarrow (z_1, e_1, h_1)$ and $(c_2, t_2) \Downarrow (z_2,
+e_2, h_2)$. If $\mathsf{Compat}(e_1, e_2)$ holds, then the pair $(z_1, z_2)$ can
+be combined into a joint state $z_{12}$ with a composite witness
 \[
-  h_{12} : \mathsf{Formed}(e_1 \oplus_E e_2,\, z_1 \star z_2).
+  h_{12} : \mathsf{Formed}(e_1 \oplus_E e_2, z_{12}),
 \]
+where $\oplus_E$ denotes evidence fusion.
 \end{proposition}
-
-The point is simple: more coordinates do not automatically mean more authority.
-Only a lawful composition of compatible pieces earns a stronger claim.
 
 \subsection{Typed Next-Action Families}
 
-The same structure lets us talk about action in a disciplined way. If the latent
-space is an atlas of partial views, then a next action is not a free-standing
-command. It is a term typed by the view that authorizes it.
+An action in this framework is not a proposition floating free of its justification.
+It is a term of a dependent type indexed by the proof-carrying state that
+authorizes it.
 
 \begin{definition}[Typed Next Action]
-Let $\mathsf{Next} : \mathcal{Z} \times \mathsf{Prop} \to \mathsf{Type}$ be a
-family assigning to each admissible latent state the type of actions it may
-authorize. If $h : \mathsf{Adm}(z)$, then a next action is a term
-$a : \mathsf{Next}(z,h)$.
+Let $\mathsf{Next} : \mathcal{Z} \times \mathsf{Adm}(\mathcal{Z}) \to \mathsf{Type}$
+be a family assigning to each proof-carrying state $(z, h)$ a type of next
+actions. A next action is a term $a : \mathsf{Next}(z, h)$.
 \end{definition}
 
-In this reading, dependent types do not police the future; they shape it. A plan
-becomes a witness that the next step is licensed by the latent state from which
-it arose.
+The dependence creates a feedback loop: one cannot emit an action of type
+$\mathsf{Next}(z, h)$ without having already constructed the proof $h$. This is
+not a safety wrapper around a plan; it is built into the plan's type.
+
+In multi-agent settings, this structure is particularly valuable. Each agent
+proposes an action only from a proof-carrying state. When agents must negotiate
+a joint plan, they must first reconcile their evidence, then jointly construct a
+proof that the merged state is admissible. If reconciliation fails, the type
+system prevents the joint plan from existing.
+
+\begin{proposition}[Typed Action Consistency]
+If $a_1 : \mathsf{Next}(z_1, h_1)$ and $a_2 : \mathsf{Next}(z_2, h_2)$, and if
+$\mathsf{Compat}(e_1, e_2)$ holds for the evidence underlying $h_1$ and $h_2$,
+then there exists a joint action $a_{12} : \mathsf{Next}(z_{12}, h_{12})$ where
+$(z_{12}, h_{12})$ is the composite proof-carrying state.
+\end{proposition}
 
 %% ─────────────────────────────────────────────────────────────────────────────
 \section{From Partial Views to Planning Contracts}
@@ -356,44 +395,16 @@ fallback policy. Typed construction gives these behaviors first-class status.
 
 \subsection{A Collaborative Visualization}
 
-Figure~\ref{fig:latent-decision} is the picture behind the paper: the latent
-space is a product of coordinates, the join is an intersection of compatible
-slices, and admissibility is the witness that the intersection is safe to act on.
+The latent space is a product of coordinates. The admissible region is their
+intersection under the compatibility constraint. Figure~\ref{fig:latent-decision}
+(in the Introduction) illustrates this in three dimensions: each colored slice
+represents a single evidence constraint, and their intersection marks the region
+from which action may be authorized.
 
-\begin{figure}[t]
-\centering
-\fbox{%
-\begin{minipage}{0.92\linewidth}
-\centering
-\small
-\textbf{Join in $n$-Dimensional Latent Space}\\[0.6em]
-\[
-  \mathcal{Z} = Z_1 \times Z_2 \times \cdots \times Z_n
-  \qquad
-  z = (z_1, z_2, \ldots, z_n)
-\]
-\[
-  \mathcal{S}_i = \{ z \in \mathcal{Z} : \mathsf{Formed}(e_i,z_i) \}
-  \qquad
-  \mathcal{J} = \bigcap_{i=1}^{m} \pi_i^{-1}(\mathcal{S}_i)
-\]
-\[
-  z^{\star} \in \mathcal{J}
-  \qquad\Longrightarrow\qquad
-  \mathsf{Adm}(z^{\star})
-  \qquad\Longrightarrow\qquad
-  a \in \mathsf{Next}(z^{\star},\mathsf{Adm}(z^{\star}))
-\]
-\[
-  \mathcal{A} = \{ z^{\star} \in \mathcal{J} : \mathsf{Adm}(z^{\star}) \}
-\]
-\end{minipage}%
-}
-\caption{A compact picture of the paper's claim: an admissible decision arises
-only after many latent coordinates are joined into a compatible region of the
-full latent space.}
-\label{fig:latent-decision}
-\end{figure}
+An action in this framework is not a free-standing command but a term typed by
+the witnesses that the latent state is admissible. The effect is powerful: one
+cannot construct an action without simultaneously constructing a proof that its
+preconditions are met.
 
 \subsection{Immediate Alignment Value in Multi-Agent Settings}
 
