@@ -79,12 +79,11 @@
 \maketitle
 
 \begin{abstract}
-A learned world model can be pictured as a latent geometry: many partial views
-woven together, a rule for their coherence, and a gate that authorizes action
-only when the pieces align. This paper proposes that dependent types offer a
-disciplined foundation for world models, because they embed evidence directly
-into state and bind every action to a formal proof of its preconditions. The
-result is a framework where learned predictive power meets explicit accountability.
+A learned world model can be pictured as a latent geometry: many partial
+coordinates, a rule for gluing them, and a gate that turns the glued state into
+an admissible decision. This paper proposes that dependent types are a serious
+way to raise the formal precision of world models, because they let evidence
+travel with state and make action depend on lawful composition.
 \end{abstract}
 
 \section{Introduction}
@@ -317,21 +316,32 @@ here is the proof that the state correctly summarizes that evidence.'' The proof
 is the authorization to use the state in planning.
 
 In a JEPA setting, a latent $z$ is formed from a context-target pair $(c, t)$
-via an encoder $\mathsf{enc} : C \to Z$. Evidence $e$ is the structured record
-of what the context contained and what was predicted. The formation judgment
-$(c, t) \Downarrow (z, e, h)$ holds when $z = \mathsf{enc}(c)$ and
-$h : \mathsf{Formed}(e, z)$. The witness $h$ certifies that the latent is a
-faithful encoding of the evidence available in $(c, t)$.
-
-\begin{proposition}[Formation Under Evidence Constraints]
-Suppose $(c_1, t_1) \Downarrow (z_1, e_1, h_1)$ and $(c_2, t_2) \Downarrow (z_2,
-e_2, h_2)$. If $\mathsf{Compat}(e_1, e_2)$ holds, then the pair $(z_1, z_2)$ can
-be combined into a joint state $z_{12}$ with a composite witness
+via an encoder $\mathsf{enc}_{\mathrm{JEPA}} : C \to Z$ together with
+projection maps $\pi_i : Z \to V_i$ that extract the $i$-th partial view. For
+a context $c$, define the partial views by
 \[
-  h_{12} : \mathsf{Formed}(e_1 \oplus_E e_2, z_{12}),
+  v_i = \pi_i\bigl(\mathsf{enc}_{\mathrm{JEPA}}(c)\bigr).
 \]
-where $\oplus_E$ denotes evidence fusion.
-\end{proposition}
+Evidence $e$ is the structured record of what the context contained and what was
+predicted. The formation judgment $(c, t) \Downarrow (z, e, h)$ holds when
+$z = \mathsf{enc}_{\mathrm{JEPA}}(c)$ and $h : \mathsf{Formed}(e, z)$. The witness $h$
+certifies that the latent is a faithful encoding of the evidence available in
+$(c, t)$.
+
+\begin{definition}[JEPA Partial-View Admissibility]
+Let $\mathcal{A}$ be the set of admissible latent states. A state is admissible
+when it can be written as a composition of JEPA partial views,
+\[
+  \mathcal{A}
+  =
+  \left\{ z = \bigoplus_{i=1}^{n} v_i \in \mathcal{Z} :
+  \exists c.\; \forall i,\; v_i = \pi_i\bigl(\mathsf{enc}_{\mathrm{JEPA}}(c)\bigr)
+  \wedge \mathsf{Compat}(v_1, \ldots, v_n)
+  \right\}.
+\]
+Here the projections $\pi_i$ supply the partial views, and $\mathsf{Compat}$
+is the check that lets them compose into one admissible state.
+\end{definition}
 
 \subsection{Typed Next-Action Families}
 
