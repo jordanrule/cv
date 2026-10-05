@@ -1,4 +1,15 @@
-resume.aux
-resume.log
-resume.out
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.nav
+*.snm
+*.toc
+*.vrb
+*.xdv
 
+resume.pdf
+security.pdf
+world_model_paper.pdf
+pitch.pdf

@@ -1,6 +1,6 @@
-.PHONY: all resume security world clean
+.PHONY: all resume security world pitch clean
 
-all: resume security world
+all: resume security world pitch
 
 # ── build helper ─────────────────────────────────────────────────────────────
 # Usage: $(call build,input.tex,output-stem)
@@ -35,7 +35,11 @@ security:
 world:
 	$(call build,world_model_paper.tex,world_model_paper)
 
+pitch:
+	$(call build,pitch.tex,pitch)
+
 # ── clean ─────────────────────────────────────────────────────────────────────
 clean:
 	rm -f *.aux *.log *.out *.bbl *.blg *.xdv \
-	      resume.pdf security.pdf world_model_paper.pdf
+	      *.nav *.snm *.toc *.vrb \
+	      resume.pdf security.pdf world_model_paper.pdf pitch.pdf
