@@ -66,17 +66,17 @@
 \newcommand{\money}[1]{\$#1}
 
 \newcommand{\marketpie}[4]{%
-\begin{tikzpicture}[scale=0.9]
-  \def\r{1.25}
-  \def\rin{0.58}
+\begin{tikzpicture}[scale=0.78]
+  \def\r{1.00}
+  \def\rin{0.44}
   \pgfmathsetmacro{\ang}{#1/100*360}
   \fill[TuringBlue] (0,0) -- (90:\r) arc[start angle=90,end angle=90-\ang,radius=\r] -- cycle;
   \fill[TuringFog] (0,0) -- (90-\ang:\r) arc[start angle=90-\ang,end angle=-270,radius=\r] -- cycle;
   \fill[TuringCream] (0,0) circle (\rin);
   \draw[TuringLine,line width=0.8pt] (0,0) circle (\r);
   \node[font=\bfseries\large] at (0,0.05) {#2};
-  \node[align=center,font=\scriptsize,text=TuringMuted] at (0,-1.65) {#3};
-  \node[align=center,font=\tiny,text=TuringMuted] at (0,-2.0) {#4};
+  \node[align=center,font=\scriptsize,text=TuringMuted] at (0,-1.22) {#3};
+  \node[align=center,font=\tiny,text=TuringMuted] at (0,-1.48) {#4};
 \end{tikzpicture}%
 }
 
@@ -103,23 +103,24 @@
   \vspace{0.9em}
 
   \begin{columns}[T,totalwidth=\textwidth]
-    \begin{column}{0.53\textwidth}
-      \begin{beamercolorbox}[wd=\linewidth,sep=1.0em,rounded=true]{block body}
-        \large Stable Diffusion made image generation feel like a real product category almost overnight. The next question is how to serve that demand---and the wave of video that follows---without paying GPU economics forever. Open models moved generative media from demo to daily use.
+    \begin{column}{0.50\textwidth}
+      \begin{beamercolorbox}[wd=\linewidth,sep=0.85em,rounded=true]{block body}
+        \large Stable Diffusion made image generation feel ordinary almost overnight. The next question is how to serve that demand—and the wave of video that follows—without paying GPU economics. Open models move generative media from demo to daily use.
       \end{beamercolorbox}
     \end{column}
-    \begin{column}{0.43\textwidth}
-      \includegraphics[width=\linewidth,height=0.64\textheight,keepaspectratio]{diffusion.png}
+    \begin{column}{0.40\textwidth}
+      \centering
+      \includegraphics[width=0.96\linewidth,height=0.58\textheight,keepaspectratio]{diffusion.png}
     \end{column}
   \end{columns}
 \end{frame}
 
 \begin{frame}{Demand is already here, and it is widening}
 \begin{columns}[T,totalwidth=\textwidth]
-  \begin{column}{0.68\textwidth}
-    \begin{beamercolorbox}[wd=\linewidth,sep=0.9em,rounded=true]{block body}
+  \begin{column}{0.67\textwidth}
+    \begin{beamercolorbox}[wd=\linewidth,sep=0.75em,rounded=true]{block body}
       \begin{center}
-      \begin{tikzpicture}[x=1.22cm,y=0.13cm]
+      \begin{tikzpicture}[x=1.15cm,y=0.12cm,scale=0.93]
         \draw[TuringLine,line width=0.9pt] (0,0) -- (7.35,0);
         \draw[TuringLine,line width=0.9pt] (0,0) -- (0,18.5);
 
@@ -133,7 +134,7 @@
           \node[font=\tiny,text=TuringMuted,anchor=east] at (-0.2,\y) {\label};
         }
 
-        \node[font=\scriptsize,text=TuringMuted,rotate=90] at (-0.95,9) {illustrative annualized demand index};
+        \node[font=\scriptsize,text=TuringMuted,rotate=90] at (-0.95,9) {annualized demand (indexed to 2022)};
 
         \draw[TuringBlue,line width=1.6pt] plot[smooth] coordinates {(0,0.8) (1,2.0) (2,4.2) (3,6.8) (4,8.4) (5,10.8) (6,13.8) (7,16.8)};
         \foreach \x/\y in {0/0.8,1/2.0,2/4.2,3/6.8,4/8.4,5/10.8,6/13.8,7/16.8} {
@@ -151,12 +152,16 @@
       \end{center}
     \end{beamercolorbox}
   \end{column}
-  \begin{column}{0.30\textwidth}
-    \begin{beamercolorbox}[wd=\linewidth,sep=0.8em,rounded=true]{block body}
-      {\bfseries Demand snapshot}\\[0.35em]
-      {\small \textbf{2026E}\\Image index: \textbf{1,050}\\Video index: \textbf{625}}\\[0.55em]
-      {\small \textbf{2029E}\\Image index: \textbf{2,100}\\Video index: \textbf{2,200}}\\[0.55em]
-      {\scriptsize Indexed to Stable Diffusion-era image adoption. Directional operating-demand view only.}
+  \begin{column}{0.29\textwidth}
+    \begin{beamercolorbox}[wd=\linewidth,sep=0.65em,rounded=true]{block body}
+      {\bfseries Demand snapshot}\\[0.25em]
+      {\scriptsize
+      \begin{tabular}{@{}l r r@{}}
+      \textbf{2026E} & image & \textbf{1,050} \\
+                    & video & \textbf{625} \\
+      \textbf{2029E} & image & \textbf{2,100} \\
+                    & video & \textbf{2,200}
+      \end{tabular}}
     \end{beamercolorbox}
   \end{column}
 \end{columns}
@@ -164,19 +169,20 @@
 
 \begin{frame}{Image first, video close behind}
 \begin{columns}[T,totalwidth=\textwidth]
-  \begin{column}{0.55\textwidth}
+  \begin{column}{0.50\textwidth}
+    \small\raggedright
     \begin{itemize}
-      \item Text-to-image proved the commercial habit. Video compounds the same diffusion logic across far more frames, so its infrastructure curve should steepen quickly.
-      \item That makes this an image market now and a video market soon after---with enough architectural overlap to target both from the beginning.
-      \item Once usage is continuous, the buying question becomes simple: how many outputs can a rack produce, at what margin, and at what power draw?
+      \item Text-to-image proved the commercial habit. Video compounds the same diffusion logic across many more frames.
+      \item This is an image market now, and a video market soon after.
+      \item Once usage is continuous, the buying question is simple: output, margin, and power.
     \end{itemize}
   \end{column}
-  \begin{column}{0.45\textwidth}
-    \softpanel{What customers feel}{\money{15--40} per 1{,}000 diffusion inferences is tolerable for experimentation and painful for scaled, always-on deployment.}
+  \begin{column}{0.40\textwidth}
+    \softpanel{What customers feel}{\money{15--40} per 1{,}000 diffusion inferences is tolerable for experimentation and painful for scaled deployment.}
 
-    \vspace{0.7em}
+    \vspace{0.25em}
 
-    \softpanel{What specialized silicon offers}{A 5--20$\times$ lower inference-cost target and a 10--50$\times$ power advantage on the denoising path, before video demand widens the gap further.}
+    \softpanel{What specialized silicon offers}{A 5--20$\times$ lower inference-cost target and a 10--50$\times$ power advantage on the denoising path.}
   \end{column}
 \end{columns}
 \end{frame}
@@ -227,22 +233,22 @@
 \begin{frame}{Market capture is a wedge story, not a winner-take-all story}
 \begin{center}
 \begin{columns}[T,totalwidth=0.96\textwidth]
-  \begin{column}{0.33\textwidth}
+  \begin{column}{0.31\textwidth}
     \centering
     \marketpie{100}{TAM}{AI inference accelerator market}{\money{25B--40B}}
   \end{column}
-  \begin{column}{0.33\textwidth}
+  \begin{column}{0.31\textwidth}
     \centering
     \marketpie{18}{SAM}{Diffusion-heavy deployment wedge}{\money{3B--8B}}
   \end{column}
-  \begin{column}{0.33\textwidth}
+  \begin{column}{0.31\textwidth}
     \centering
     \marketpie{3}{SOM}{Early meaningful capture}{\money{50M--250M}+}
   \end{column}
 \end{columns}
 \end{center}
 
-\vspace{0.7em}
+\vspace{0.25em}
 
 \begin{beamercolorbox}[wd=\textwidth,sep=0.8em,rounded=true]{block body}
 \small This is a focused play for the part of inference where image and video generation are persistent enough to justify specialized economics.
@@ -250,22 +256,19 @@
 \end{frame}
 
 \begin{frame}{Competition is broad. The advantage is narrow and commercial.}
-\begin{columns}[T,totalwidth=\textwidth]
-  \begin{column}{0.24\textwidth}
-    \softpanel{Cloud GPUs}{Great default. Expensive once denoising becomes a margin business.}
+\begin{columns}[T,totalwidth=0.96\textwidth]
+  \begin{column}{0.30\textwidth}
+    \softpanel{Cloud GPUs}{Great default. Expensive at scale.}
   \end{column}
-  \begin{column}{0.24\textwidth}
-    \softpanel{Hyperscaler silicon}{Powerful, but built for broad internal fleets, not an open wedge.}
+  \begin{column}{0.30\textwidth}
+    \softpanel{Hyperscaler silicon}{Powerful, but built for broad fleets.}
   \end{column}
-  \begin{column}{0.24\textwidth}
-    \softpanel{AI chip startups}{Many chase general AI acceleration. Few stay disciplined on diffusion economics.}
-  \end{column}
-  \begin{column}{0.24\textwidth}
-    \softpanel{CPU / edge fallback}{Cheap to start, poor at sustained commercial throughput.}
+  \begin{column}{0.30\textwidth}
+    \softpanel{AI chip startups}{Many chase general AI. Few stay on diffusion.}
   \end{column}
 \end{columns}
 
-\vspace{0.9em}
+\vspace{0.55em}
 
 \begin{beamercolorbox}[wd=\textwidth,sep=0.9em,rounded=true]{block body}
 \large Turing: better economics for a repeating diffusion workload, with a cleaner path to trustworthy silicon.
@@ -302,37 +305,32 @@
 
 \begin{frame}{Go-to-market: partner with Southern U.S. AI buildouts}
 \begin{columns}[T,totalwidth=\textwidth]
-  \begin{column}{0.5\textwidth}
+  \begin{column}{0.46\textwidth}
+    \small\raggedright
     \begin{itemize}
       \item New AI capacity is easier to shape than installed GPU fleets are to displace.
-      \item Southern buildouts offer power, land, cooling expansion, and procurement flexibility.
-      \item The pitch: more generated output per watt, per rack, and per megawatt committed to generative media.
+      \item Southern buildouts offer power, land, and cooling headroom.
+      \item The pitch is simple: more output per watt, per rack, and per megawatt.
     \end{itemize}
   \end{column}
-  \begin{column}{0.5\textwidth}
+  \begin{column}{0.48\textwidth}
     \softpanel{Target profiles, not yet named deals}{Texas, Tennessee, and Georgia are attractive because new AI halls are often planned in 20--100+ MW increments, where accelerator choice still affects the economics of the build.}
   \end{column}
 \end{columns}
 
-\vspace{0.5em}
+\vspace{0.3em}
 
 \begin{columns}[T,totalwidth=\textwidth]
-  \begin{column}{0.32\textwidth}
-    \begin{beamercolorbox}[wd=\linewidth,sep=0.65em,rounded=true]{block body}
+  \begin{column}{0.46\textwidth}
+    \begin{beamercolorbox}[wd=\linewidth,sep=0.5em,rounded=true]{block body}
       {\bfseries Pod pilot}\\[0.2em]
-      {\scriptsize 20 MW-class pod\\design partner + trial}
+      {\scriptsize 20 MW pod, trial design partner}
     \end{beamercolorbox}
   \end{column}
-  \begin{column}{0.32\textwidth}
-    \begin{beamercolorbox}[wd=\linewidth,sep=0.65em,rounded=true]{block body}
+  \begin{column}{0.46\textwidth}
+    \begin{beamercolorbox}[wd=\linewidth,sep=0.5em,rounded=true]{block body}
       {\bfseries Regional AI hall}\\[0.2em]
-      {\scriptsize 50 MW-class cluster\\rack-scale proof}
-    \end{beamercolorbox}
-  \end{column}
-  \begin{column}{0.32\textwidth}
-    \begin{beamercolorbox}[wd=\linewidth,sep=0.65em,rounded=true]{block body}
-      {\bfseries Campus expansion}\\[0.2em]
-      {\scriptsize 100 MW+ buildout\\module standardization}
+      {\scriptsize 50 MW cluster, rack-scale proof}
     \end{beamercolorbox}
   \end{column}
 \end{columns}
@@ -340,7 +338,7 @@
 
 \begin{frame}{The next 12 months}
 \begin{center}
-\begin{tikzpicture}[x=3.0cm,y=1cm]
+\begin{tikzpicture}[x=2.36cm,y=1cm]
   \draw[TuringLine,line width=1.2pt] (0,0) -- (3.25,0);
   \foreach \x/\q/\title/\desc in {
     0/{Q1}/{tile confidence}/{formal closure, synthesis estimates, partner packaging},
@@ -349,48 +347,49 @@
     3/{Q4}/{first deployment path}/{reference plan for a pod, hall, or private cluster}
   } {
     \fill[TuringBlue] (\x,0) circle (2.5pt);
-    \node[font=\bfseries\small,anchor=south] at (\x,0.18) {\q};
-    \node[draw=TuringLine,fill=TuringPanel,rounded corners=7pt,align=left,text width=2.25cm,anchor=north west,inner sep=7pt] at ($(\x,0)+(-0.1,-0.45)$) {\textbf{\title}\\[-0.1em]\scriptsize \desc};
+    \node[font=\bfseries\scriptsize,anchor=south] at (\x,0.14) {\q};
+    \node[draw=TuringLine,fill=TuringPanel,rounded corners=7pt,align=left,text width=1.72cm,anchor=north west,inner sep=4pt] at ($(\x,0)+(-0.07,-0.34)$) {\textbf{\title}\\[-0.12em]\tiny \desc};
   }
 \end{tikzpicture}
 \end{center}
 
-\vspace{0.8em}
+\vspace{0.25em}
 
-\begin{beamercolorbox}[wd=\textwidth,sep=0.9em,rounded=true]{block body}
-\large The first win is not a global platform. It is one buildout where image and video generation are expensive enough to justify a better chip.
+\begin{beamercolorbox}[wd=\textwidth,sep=0.55em,rounded=true]{block body}
+\scriptsize The first win is not a global platform. It is one buildout where image and video generation are expensive enough to justify a better chip.
 \end{beamercolorbox}
 \end{frame}
 
 \begin{frame}[plain]
-\vspace{1.4em}
+\vspace{0.25em}
 \begin{center}
-  {\fontsize{28}{34}\selectfont\bfseries Build for image now. Grow into video fast.}\par
+  {\fontsize{24}{28}\selectfont\bfseries The market is already measured in billions.}\par
 
-  \vspace{0.8em}
-  {\large The same optimization that improves image-generation economics becomes even more valuable as video generation scales.}\par
+  \vspace{0.15em}
+  {\normalsize Image generation made diffusion ordinary; video is widening the same demand curve.}\par
 
-  \vspace{1.0em}
+  \vspace{0.30em}
 
-  \begin{columns}[T,totalwidth=0.96\textwidth]
-    \begin{column}{0.32\textwidth}
-      \softpanel{Illustrative savings}{At 100M generations per month, a move from \money{25} to \money{5} per 1{,}000 outputs implies roughly \money{24M} in annualized savings.}
-    \end{column}
-    \begin{column}{0.32\textwidth}
-      \softpanel{Why video matters}{Video multiplies denoising demand across time. If image is the first commercial wedge, video is the force that widens it.}
-    \end{column}
-    \begin{column}{0.32\textwidth}
-      \softpanel{Turing's opening}{Win one image-heavy deployment first, but build the architecture and sales story with image-plus-video infrastructure in mind from day one.}
-    \end{column}
-  \end{columns}
+  \begin{minipage}{0.78\textwidth}
+      \begin{beamercolorbox}[wd=\linewidth,sep=0.45em,rounded=true]{block body}
+      {\bfseries Current market}\\[0.15em]
+      {\small \money{25B--40B} in AI inference accelerators, with a \money{3B--8B} diffusion-heavy wedge already visible.}
+      \end{beamercolorbox}
 
-  \vspace{1.0em}
+      \vspace{0.18em}
 
-  \begin{beamercolorbox}[wd=0.74\textwidth,sep=0.9em,rounded=true]{block body}
-    \centering
-    \large Turing\\[0.2em]
-    \normalsize formal-verification-first silicon for generative media infrastructure
-  \end{beamercolorbox}
+      \begin{beamercolorbox}[wd=\linewidth,sep=0.45em,rounded=true]{block body}
+      {\bfseries Current usage}\\[0.15em]
+      {\small 100M generations per month implies roughly \money{24M} in annualized savings when output costs move from \money{25} to \money{5} per 1{,}000.}
+      \end{beamercolorbox}
+
+      \vspace{0.18em}
+
+      \begin{beamercolorbox}[wd=\linewidth,sep=0.45em,rounded=true]{block body}
+      {\bfseries Projected market}\\[0.15em]
+      {\small At 250M--500M generations per month, annualized savings rise to roughly \money{60M--120M}, before video widens the wedge further.}
+      \end{beamercolorbox}
+  \end{minipage}
 \end{center}
 \end{frame}
 
